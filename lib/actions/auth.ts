@@ -56,11 +56,17 @@ export async function signIn(formData: FormData) {
   }
 
   const supabase = await createClient()
-  const { error } = await supabase.auth.signInWithPassword(credentials)
+  const { data, error } = await supabase.auth.signInWithPassword(credentials)
 
   if (error) {
     redirect('/login?error=' + encodeURIComponent('E-posta veya şifre hatalı.'))
   }
 
-  redirect('/')
+  redirect(data.user.user_metadata.role === 'employer' ? '/employer' : '/freelancer')
+}
+
+export async function signOut() {
+  const supabase = await createClient()
+  await supabase.auth.signOut()
+  redirect('/login')
 }
