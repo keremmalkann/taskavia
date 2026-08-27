@@ -37,7 +37,10 @@ export async function signUp(formData: FormData) {
   })
 
   if (error) {
-    redirect('/signup?error=' + encodeURIComponent(error.message))
+    const message = error.message === 'User already registered'
+      ? 'Bu e-posta adresiyle daha önce kayıt olunmuş.'
+      : 'Kayıt şu anda tamamlanamadı. Lütfen bilgilerini kontrol edip tekrar dene.'
+    redirect('/signup?error=' + encodeURIComponent(message))
   }
 
   redirect('/login?message=' + encodeURIComponent('Hesabın oluşturuldu. E-postanı doğruladıktan sonra giriş yapabilirsin.'))
