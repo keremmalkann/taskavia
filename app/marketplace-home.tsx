@@ -40,7 +40,7 @@ export default function MarketplaceHome() {
       <nav className="site-nav" aria-label="Ana navigasyon">
         <Link className="brand" href="/" aria-label="İşlik ana sayfa"><span className="brand-mark" aria-hidden="true">i</span><span>işlik</span></Link>
         <div className="nav-links"><a href="#projeler">İş bul</a><a href="#yetenekler">Yetenek bul</a><a href="#nasil-calisir">Nasıl çalışır?</a></div>
-        <div className="nav-actions"><Link className="text-link" href="/signup">Giriş yap</Link><Link className="button button-dark button-small" href="/signup">Ücretsiz katıl <span aria-hidden="true">↗</span></Link></div>
+        <div className="nav-actions"><Link className="text-link" href="/login">Giriş yap</Link><Link className="button button-dark button-small" href="/signup">Ücretsiz katıl <span aria-hidden="true">↗</span></Link></div>
       </nav>
 
       <section className="hero">
