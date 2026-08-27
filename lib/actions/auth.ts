@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { getSiteUrl } from '@/lib/site-url'
 import { redirect } from 'next/navigation'
 
 function getCredentials(formData: FormData) {
@@ -29,6 +30,7 @@ export async function signUp(formData: FormData) {
     email: credentials.email,
     password: credentials.password,
     options: {
+      emailRedirectTo: `${getSiteUrl()}/auth/callback`,
       data: {
         full_name: fullName,
         role: role,
