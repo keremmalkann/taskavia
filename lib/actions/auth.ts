@@ -17,6 +17,12 @@ function getCredentials(formData: FormData) {
 
 export async function signUp(formData: FormData) {
   const supabase = await createClient()
+  const { data: { user: signedInUser } } = await supabase.auth.getUser()
+
+  if (signedInUser) {
+    redirect(signedInUser.user_metadata.role === 'employer' ? '/employer' : '/freelancer')
+  }
+
   const credentials = getCredentials(formData)
   const fullName = String(formData.get('fullName') ?? '').trim()
   const requestedRole = String(formData.get('role') ?? '')
@@ -26,7 +32,7 @@ export async function signUp(formData: FormData) {
     redirect('/signup?error=' + encodeURIComponent('Lütfen bilgilerini eksiksiz ve geçerli biçimde gir.'))
   }
 
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email: credentials.email,
     password: credentials.password,
     options: {
@@ -39,10 +45,18 @@ export async function signUp(formData: FormData) {
   })
 
   if (error) {
-    const message = error.message === 'User already registered'
-      ? 'Bu e-posta adresiyle daha önce kayıt olunmuş.'
-      : 'Kayıt şu anda tamamlanamadı. Lütfen bilgilerini kontrol edip tekrar dene.'
+    const isExistingUser = error.code === 'user_already_exists' || error.message === 'User already registered'
+
+    if (isExistingUser) {
+      redirect('/login?message=' + encodeURIComponent('Bu e-posta adresiyle zaten bir hesap var. Şifrenle giriş yapabilirsin.'))
+    }
+
+    const message = 'Kayıt şu anda tamamlanamadı. Lütfen bilgilerini kontrol edip tekrar dene.'
     redirect('/signup?error=' + encodeURIComponent(message))
+  }
+
+  if (data.user?.identities?.length === 0) {
+    redirect('/login?message=' + encodeURIComponent('Bu e-posta adresiyle zaten bir hesap var. Şifrenle giriş yapabilirsin.'))
   }
 
   redirect('/login?message=' + encodeURIComponent('Hesabın oluşturuldu. E-postanı doğruladıktan sonra giriş yapabilirsin.'))
