@@ -14,12 +14,12 @@ export default async function SignUpPage({ searchParams }: { searchParams: Promi
         <Link className="back-link" href="/">← Ana sayfaya dön</Link><h1>Aramıza katıl.</h1><p className="signup-subtitle">Ücretsiz hesabını oluştur, yeni fırsatlarla tanış.</p>
         {params.error && <p className="error-message" role="alert">{params.error}</p>}
         <form action={signUp} className="signup-form">
-          <div className="field"><label htmlFor="fullName">Ad Soyad</label><input id="fullName" name="fullName" placeholder="Adın ve soyadın" required /></div>
-          <div className="field"><label htmlFor="email">E-posta</label><input id="email" name="email" type="email" placeholder="ornek@email.com" required /></div>
-          <div className="field"><label htmlFor="password">Şifre</label><input id="password" name="password" type="password" placeholder="En az 6 karakter" required minLength={6} /></div>
+          <div className="field"><label htmlFor="fullName">Ad Soyad</label><input id="fullName" name="fullName" autoComplete="name" placeholder="Adın ve soyadın" required /></div>
+          <div className="field"><label htmlFor="email">E-posta</label><input id="email" name="email" type="email" autoComplete="email" placeholder="ornek@email.com" required /></div>
+          <div className="field"><label htmlFor="password">Şifre</label><input id="password" name="password" type="password" autoComplete="new-password" placeholder="En az 6 karakter" required minLength={6} /></div>
           <span className="role-title">Nasıl katılmak istiyorsun?</span>
           <div className="role-options"><label className="role-option"><input type="radio" name="role" value="freelancer" defaultChecked /> Freelancer olarak</label><label className="role-option"><input type="radio" name="role" value="employer" /> İşveren olarak</label></div>
-          <button type="submit" className="signup-submit">Hesabımı oluştur →</button><p className="form-note">Kaydolarak kullanım koşullarını ve gizlilik politikasını kabul etmiş olursun.</p>
+          <button type="submit" className="signup-submit">Hesabımı oluştur →</button><p className="auth-switch">Zaten hesabın var mı? <Link href="/login">Giriş yap</Link></p><p className="form-note">Kaydolarak kullanım koşullarını ve gizlilik politikasını kabul etmiş olursun.</p>
         </form>
       </div></section>
     </main>
