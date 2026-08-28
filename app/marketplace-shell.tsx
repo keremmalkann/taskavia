@@ -35,5 +35,5 @@ export function Feedback({ error, message }: { error?: string; message?: string 
 }
 
 export function SetupNotice() {
-  return <div className="marketplace-empty"><strong>Veritabanı kurulumu gerekiyor</strong><p>Supabase migration dosyasını SQL Editor üzerinden çalıştırdığında bu alan gerçek verilerle dolacak.</p></div>
+  return <div className="marketplace-empty"><strong>Veriler şu anda yüklenemedi</strong><p>Bağlantı veya erişim kontrolü sırasında bir sorun oluştu. Sayfayı yenileyip tekrar deneyebilirsin.</p></div>
 }
