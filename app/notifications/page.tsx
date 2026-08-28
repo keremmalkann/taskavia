@@ -10,10 +10,10 @@ export const metadata: Metadata = { title: 'Bildirimler — İşlik', descriptio
 
 export default async function NotificationsPage({ searchParams }: { searchParams: Promise<{ error?: string; message?: string }> }) {
   const params = await searchParams
-  const [{ role, fullName }, feed] = await Promise.all([requireUser(), getNotifications(50)])
-  const previewFeed = { items: feed.items.slice(0, 5), unreadCount: feed.unreadCount }
+  const { role, fullName } = await requireUser()
+  const feed = await getNotifications(50).catch(() => ({ items: [], unreadCount: 0 }))
 
-  return <MarketplaceShell name={fullName} role={role} active="notifications" notificationFeed={previewFeed}>
+  return <MarketplaceShell name={fullName} role={role} active="notifications">
     <div className="marketplace-page-head"><div><p>BİLDİRİM MERKEZİ</p><h1>Gelişmeleri kaçırma.</h1><span>Mesajlar, teklifler ve ödeme hareketleri burada tek akışta toplanır.</span></div>{feed.unreadCount > 0 && <form action={markNotificationsRead}><button className="notification-read-all" type="submit">Tümünü okundu işaretle</button></form>}</div>
     <Feedback {...params} />
     <section className="notifications-page-list">
