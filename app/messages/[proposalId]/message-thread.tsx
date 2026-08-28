@@ -11,12 +11,14 @@ type MessageThreadProps = {
   userId: string
   currentUserName: string
   counterpartName: string
+  jobTitle: string
   initialMessages: Message[]
 }
 
-export function MessageThread({ proposalId, userId, currentUserName, counterpartName, initialMessages }: MessageThreadProps) {
+export function MessageThread({ proposalId, userId, currentUserName, counterpartName, jobTitle, initialMessages }: MessageThreadProps) {
   const [messages, setMessages] = useState(initialMessages)
   const messageListRef = useRef<HTMLDivElement>(null)
+  const counterpartInitials = counterpartName.split(' ').slice(0, 2).map((part) => part[0]).join('').toLocaleUpperCase('tr-TR')
 
   useEffect(() => {
     const messageList = messageListRef.current
@@ -36,6 +38,11 @@ export function MessageThread({ proposalId, userId, currentUserName, counterpart
   }, [proposalId])
 
   return <div className="message-thread">
+    <header className="conversation-toolbar">
+      <span className="conversation-toolbar-avatar" aria-hidden="true">{counterpartInitials}</span>
+      <div><strong>{counterpartName}</strong><small>{jobTitle}</small></div>
+      <span className="conversation-status"><i aria-hidden="true" /> Aktif proje</span>
+    </header>
     <div className="message-list" ref={messageListRef}>
       {messages.map((message) => {
         const isMine = message.sender_id === userId
