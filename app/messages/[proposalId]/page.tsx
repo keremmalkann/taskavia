@@ -26,7 +26,13 @@ export default async function MessagesPage({ params, searchParams }: { params: P
     <Feedback {...feedback} />
     <div className="workspace-head"><div><p>AKTİF ÇALIŞMA ALANI</p><h1>{job.title}</h1><span>{counterpart} ile güvenli proje alanı</span></div><Link href={`/jobs/${job.id}`}>İlanı görüntüle →</Link></div>
     <div className="workspace-layout">
-      <MessageThread proposalId={proposalId} userId={user.id} initialMessages={messages ?? []} />
+      <MessageThread
+        proposalId={proposalId}
+        userId={user.id}
+        currentUserName={fullName}
+        counterpartName={counterpart}
+        initialMessages={messages ?? []}
+      />
       <aside className="payment-panel"><span>GÜVENLİ ÖDEME</span><h2>{formatCurrency(proposal.price)}</h2><p>Platform hizmet bedeli dahil proje bütçesi.</p><div className="payment-status"><i className={payment?.status ?? 'pending'} />{payment?.status === 'funded' ? 'Ödeme emanette' : payment?.status === 'released' ? 'Freelancer’a aktarıldı' : 'Ödeme bekleniyor'}</div>
         {role === 'employer' && !payment && <form action={startCheckout.bind(null, proposalId)}><button type="submit">Stripe ile öde →</button></form>}
         {role === 'employer' && payment?.status === 'funded' && job.status === 'completed' && <form action={releasePayment.bind(null, proposalId)}><button type="submit">Ödemeyi serbest bırak →</button></form>}
