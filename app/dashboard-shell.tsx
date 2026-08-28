@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { signOut } from '@/lib/actions/auth'
 
-type NavItem = { label: string; icon: string; active?: boolean; badge?: string }
+type NavItem = { label: string; icon: string; href?: string; active?: boolean; badge?: string }
 
 export function DashboardShell({ name, roleLabel, navItems, action, children }: {
   name: string
@@ -19,11 +19,11 @@ export function DashboardShell({ name, roleLabel, navItems, action, children }: 
         <nav className="dashboard-nav" aria-label="Panel menüsü">
           <p>MENÜ</p>
           {navItems.map((item) => (
-            <a className={item.active ? 'active' : ''} href="#" key={item.label}>
+            <Link className={item.active ? 'active' : ''} href={item.href ?? '#'} key={item.label}>
               <span className="dashboard-nav-icon" aria-hidden="true">{item.icon}</span>
               <span>{item.label}</span>
               {item.badge && <strong>{item.badge}</strong>}
-            </a>
+            </Link>
           ))}
         </nav>
         <div className="dashboard-profile">

@@ -1,61 +1,27 @@
 import type { Metadata } from 'next'
-import { DashboardDate, DashboardShell, StatCard } from '@/app/dashboard-shell'
+import Link from 'next/link'
+import { DashboardDate, StatCard } from '@/app/dashboard-shell'
+import { MarketplaceShell, SetupNotice } from '@/app/marketplace-shell'
 import { requireRole } from '@/lib/auth/role'
+import { formatCurrency, formatDate } from '@/lib/marketplace'
 
 export const dynamic = 'force-dynamic'
-
-export const metadata: Metadata = {
-  title: 'Freelancer Paneli — İşlik',
-  description: 'Tekliflerini, projelerini ve kazançlarını İşlik freelancer panelinden yönet.',
-}
-
-const jobs = [
-  { company: 'Mona Studio', mark: 'MS', time: '2 saat önce', title: 'Mobil uygulama için ürün tasarımcısı', skills: ['Figma', 'UI/UX', 'Design System'], budget: '₺45.000', match: '%96 eşleşme' },
-  { company: 'Luma Teknoloji', mark: 'LT', time: '5 saat önce', title: 'Next.js e-ticaret projesi geliştirme', skills: ['Next.js', 'TypeScript', 'Supabase'], budget: '₺72.000', match: '%91 eşleşme' },
-  { company: 'Origo', mark: 'OR', time: 'Dün', title: 'Yeni marka kimliği ve sosyal medya seti', skills: ['Branding', 'Illustrator', 'Strategy'], budget: '₺28.500', match: '%87 eşleşme' },
-]
+export const metadata: Metadata = { title: 'Freelancer Paneli — İşlik', description: 'Tekliflerini, projelerini ve kazançlarını yönet.' }
 
 export default async function FreelancerPage() {
-  const { fullName } = await requireRole('freelancer')
-  const firstName = fullName.split(' ')[0]
+  const { supabase, user, fullName } = await requireRole('freelancer')
+  const [{ data: jobs, error: jobsError }, { data: proposals }, { data: payments }] = await Promise.all([
+    supabase.from('jobs').select('*, employer:profiles!jobs_employer_id_fkey(full_name, company_name)').eq('status', 'open').order('created_at', { ascending: false }).limit(3),
+    supabase.from('proposals').select('id, status, job_id, price').eq('freelancer_id', user.id),
+    supabase.from('payments').select('amount, platform_fee, status').eq('freelancer_id', user.id),
+  ])
+  const active = proposals?.filter((proposal) => proposal.status === 'accepted').length ?? 0
+  const pending = proposals?.filter((proposal) => proposal.status === 'pending').length ?? 0
+  const earnings = payments?.filter((payment) => payment.status === 'released').reduce((sum, payment) => sum + Number(payment.amount) - Number(payment.platform_fee), 0) ?? 0
 
-  return (
-    <DashboardShell
-      name={fullName}
-      roleLabel="Freelancer hesabı"
-      action={<button className="dashboard-primary">İşleri keşfet <span>→</span></button>}
-      navItems={[
-        { label: 'Genel bakış', icon: '◫', active: true },
-        { label: 'İşleri keşfet', icon: '⌕' },
-        { label: 'Tekliflerim', icon: '◇', badge: '4' },
-        { label: 'Aktif projeler', icon: '□', badge: '2' },
-        { label: 'Mesajlar', icon: '○', badge: '3' },
-      ]}
-    >
-      <div className="dashboard-heading">
-        <div><p>FREELANCER PANELİ</p><h1>Günaydın, {firstName}.</h1><span>Bugün yeteneklerinle eşleşen 12 yeni fırsat var.</span></div>
-        <DashboardDate />
-      </div>
-
-      <section className="dashboard-stats" aria-label="Hesap özeti">
-        <StatCard label="AKTİF TEKLİFLER" value="4" note="2 teklif inceleniyor" />
-        <StatCard label="DEVAM EDEN İŞLER" value="2" note="Sonraki teslim: 3 gün" tone="lime" />
-        <StatCard label="BU AY KAZANÇ" value="₺38.500" note="Geçen aya göre ↗ %18" tone="dark" />
-      </section>
-
-      <section className="dashboard-section">
-        <div className="dashboard-section-title"><div><p>SANA ÖZEL</p><h2>Yeni iş fırsatları</h2></div><button>Tümünü gör →</button></div>
-        <div className="opportunity-list">
-          {jobs.map((job) => (
-            <article className="opportunity-card" key={job.title}>
-              <div className="opportunity-company"><span>{job.mark}</span><div><strong>{job.company}</strong><small>{job.time}</small></div><em>{job.match}</em></div>
-              <h3>{job.title}</h3>
-              <div className="opportunity-skills">{job.skills.map((skill) => <span key={skill}>{skill}</span>)}</div>
-              <footer><div><small>BÜTÇE</small><strong>{job.budget}</strong></div><button aria-label={`${job.title} ilanını aç`}>→</button></footer>
-            </article>
-          ))}
-        </div>
-      </section>
-    </DashboardShell>
-  )
+  return <MarketplaceShell name={fullName} role="freelancer" active="dashboard">
+    <div className="dashboard-heading"><div><p>FREELANCER PANELİ</p><h1>Günaydın, {fullName.split(' ')[0]}.</h1><span>Yeni fırsatları keşfet, tekliflerini ve aktif işlerini tek yerden yönet.</span></div><DashboardDate /></div>
+    <section className="dashboard-stats"><StatCard label="AKTİF TEKLİFLER" value={String(pending)} note={`${proposals?.length ?? 0} toplam teklif`} /><StatCard label="DEVAM EDEN İŞLER" value={String(active)} note="Kabul edilmiş projeler" tone="lime" /><StatCard label="TOPLAM KAZANÇ" value={formatCurrency(earnings)} note="Serbest bırakılan ödemeler" tone="dark" /></section>
+    <section className="dashboard-section"><div className="dashboard-section-title"><div><p>YENİ FIRSATLAR</p><h2>Sana açık projeler</h2></div><Link href="/jobs">Tümünü gör →</Link></div>{jobsError && <SetupNotice />}<div className="opportunity-list">{jobs?.map((job) => { const employer = Array.isArray(job.employer) ? job.employer[0] : job.employer; return <article className="opportunity-card" key={job.id}><div className="opportunity-company"><span>{(employer?.company_name || employer?.full_name || 'İŞ').slice(0,2).toLocaleUpperCase('tr-TR')}</span><div><strong>{employer?.company_name || employer?.full_name || 'İşlik işvereni'}</strong><small>{formatDate(job.created_at)}</small></div></div><h3>{job.title}</h3><div className="opportunity-skills">{job.skills?.map((skill: string) => <span key={skill}>{skill}</span>)}</div><footer><div><small>BÜTÇE</small><strong>{formatCurrency(job.budget_min)} – {formatCurrency(job.budget_max)}</strong></div><Link className="round-link" href={`/jobs/${job.id}`}>→</Link></footer></article>})}{!jobsError && jobs?.length === 0 && <div className="marketplace-empty"><p>Henüz açık ilan yok.</p></div>}</div></section>
+  </MarketplaceShell>
 }
