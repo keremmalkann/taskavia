@@ -17,6 +17,7 @@ export function LoginHistoryGuard() {
           method: 'POST',
           cache: 'no-store',
           credentials: 'same-origin',
+          keepalive: true,
           headers: { 'X-Requested-With': 'history-navigation' },
         })
       } finally {
