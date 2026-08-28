@@ -36,7 +36,10 @@ export default async function LoginPage({
           {(params.message || params.error) && <AuthFeedbackUrlCleanup />}
           <form action={signIn} className="signup-form">
             <div className="field"><label htmlFor="email">E-posta</label><input id="email" name="email" type="email" autoComplete="email" placeholder="ornek@email.com" required /></div>
-            <div className="field"><label htmlFor="password">Şifre</label><input id="password" name="password" type="password" autoComplete="current-password" placeholder="Şifren" required minLength={6} /></div>
+            <div className="field">
+              <div className="password-label-row"><label htmlFor="password">Şifre</label><Link href="/forgot-password">Parolamı unuttum</Link></div>
+              <input id="password" name="password" type="password" autoComplete="current-password" placeholder="Şifren" required minLength={6} />
+            </div>
             <button type="submit" className="signup-submit">Giriş yap →</button>
             <p className="auth-switch">Henüz hesabın yok mu? <Link href="/signup">Ücretsiz kayıt ol</Link></p>
           </form>
