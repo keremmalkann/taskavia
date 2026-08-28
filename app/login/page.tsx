@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { signIn } from "@/lib/actions/auth";
 import { AuthFeedbackUrlCleanup } from "@/app/auth-feedback-url-cleanup";
+import { LoginHistoryGuard } from "@/app/login-history-guard";
 
 export const metadata: Metadata = {
   title: "Giriş Yap — İşlik",
@@ -17,6 +18,7 @@ export default async function LoginPage({
 
   return (
     <main className="signup-shell login-shell">
+      <LoginHistoryGuard />
       <aside className="signup-aside login-aside">
         <Link className="brand" href="/"><span className="brand-mark">i</span><span>işlik</span></Link>
         <div className="signup-quote">

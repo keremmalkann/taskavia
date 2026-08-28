@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { signOut } from '@/lib/actions/auth'
 import { NotificationMenu } from '@/app/notification-menu'
+import { ProtectedHistoryGuard } from '@/app/protected-history-guard'
 
 type NavItem = { label: string; icon: string; href?: string; active?: boolean; badge?: string }
 
@@ -15,6 +16,7 @@ export function DashboardShell({ name, roleLabel, navItems, action, children }: 
 
   return (
     <main className="dashboard-shell">
+      <ProtectedHistoryGuard />
       <aside className="dashboard-sidebar">
         <Link className="brand dashboard-brand" href="/"><span className="brand-mark">i</span><span>işlik</span></Link>
         <nav className="dashboard-nav" aria-label="Panel menüsü">
