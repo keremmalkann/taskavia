@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { signIn } from "@/lib/actions/auth";
+import { AuthFeedbackUrlCleanup } from "@/app/auth-feedback-url-cleanup";
 
 export const metadata: Metadata = {
   title: "Giriş Yap — İşlik",
@@ -32,6 +33,7 @@ export default async function LoginPage({
           <p className="signup-subtitle">Hesabına giriş yap ve kaldığın yerden devam et.</p>
           {params.message && <p className="success-message" role="status">{params.message}</p>}
           {params.error && <p className="error-message" role="alert">{params.error}</p>}
+          {(params.message || params.error) && <AuthFeedbackUrlCleanup />}
           <form action={signIn} className="signup-form">
             <div className="field"><label htmlFor="email">E-posta</label><input id="email" name="email" type="email" autoComplete="email" placeholder="ornek@email.com" required /></div>
             <div className="field"><label htmlFor="password">Şifre</label><input id="password" name="password" type="password" autoComplete="current-password" placeholder="Şifren" required minLength={6} /></div>

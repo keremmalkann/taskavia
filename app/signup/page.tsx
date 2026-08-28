@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { signUp } from "@/lib/actions/auth";
+import { AuthFeedbackUrlCleanup } from "@/app/auth-feedback-url-cleanup";
 
 export default async function SignUpPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const params = await searchParams;
@@ -13,6 +14,7 @@ export default async function SignUpPage({ searchParams }: { searchParams: Promi
       <section className="signup-main"><div className="signup-form-wrap">
         <Link className="back-link" href="/">← Ana sayfaya dön</Link><h1>Aramıza katıl.</h1><p className="signup-subtitle">Ücretsiz hesabını oluştur, yeni fırsatlarla tanış.</p>
         {params.error && <p className="error-message" role="alert">{params.error}</p>}
+        {params.error && <AuthFeedbackUrlCleanup />}
         <form action={signUp} className="signup-form">
           <div className="field"><label htmlFor="fullName">Ad Soyad</label><input id="fullName" name="fullName" autoComplete="name" placeholder="Adın ve soyadın" required /></div>
           <div className="field"><label htmlFor="email">E-posta</label><input id="email" name="email" type="email" autoComplete="email" placeholder="ornek@email.com" required /></div>
