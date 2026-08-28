@@ -7,7 +7,7 @@ export function dashboardPathForRole(role: unknown) {
   return role === 'employer' ? '/employer' : '/freelancer'
 }
 
-export async function requireRole(expectedRole: UserRole) {
+export async function requireUser() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -15,15 +15,30 @@ export async function requireRole(expectedRole: UserRole) {
     redirect('/login?error=' + encodeURIComponent('Bu sayfayı görmek için giriş yapmalısın.'))
   }
 
-  const role: UserRole = user.user_metadata.role === 'employer' ? 'employer' : 'freelancer'
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, full_name')
+    .eq('id', user.id)
+    .maybeSingle()
 
-  if (role !== expectedRole) {
-    redirect(dashboardPathForRole(role))
-  }
+  const role: UserRole = profile
+    ? (profile.role === 'employer' ? 'employer' : 'freelancer')
+    : (user.user_metadata.role === 'employer' ? 'employer' : 'freelancer')
 
   return {
+    supabase,
     user,
     role,
-    fullName: String(user.user_metadata.full_name ?? user.email?.split('@')[0] ?? 'İşlik üyesi'),
+    fullName: String(profile?.full_name ?? user.user_metadata.full_name ?? user.email?.split('@')[0] ?? 'İşlik üyesi'),
   }
+}
+
+export async function requireRole(expectedRole: UserRole) {
+  const current = await requireUser()
+
+  if (current.role !== expectedRole) {
+    redirect(dashboardPathForRole(current.role))
+  }
+
+  return current
 }
