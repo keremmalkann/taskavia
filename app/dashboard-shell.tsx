@@ -29,8 +29,10 @@ export function DashboardShell({ name, roleLabel, navItems, action, children }: 
         <div className="dashboard-profile">
           <span className="dashboard-avatar">{initials}</span>
           <div><strong>{name}</strong><small>{roleLabel}</small></div>
-          <form action={signOut}><button type="submit" title="Çıkış yap" aria-label="Çıkış yap">↗</button></form>
         </div>
+        <form action={signOut} className="dashboard-logout">
+          <button type="submit"><span aria-hidden="true">↗</span><span>Çıkış yap</span></button>
+        </form>
       </aside>
       <section className="dashboard-content">
         <header className="dashboard-topbar">
