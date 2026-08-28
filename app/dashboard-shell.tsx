@@ -52,8 +52,11 @@ export function DashboardShell({ name, roleLabel, navItems, action, children }: 
   )
 }
 
-export function StatCard({ label, value, note, tone = 'paper' }: { label: string; value: string; note: string; tone?: 'paper' | 'lime' | 'dark' | 'blue' }) {
-  return <article className={`dashboard-stat dashboard-stat-${tone}`}><span>{label}</span><strong>{value}</strong><small>{note}</small></article>
+export function StatCard({ label, value, note, tone = 'paper', href }: { label: string; value: string; note: string; tone?: 'paper' | 'lime' | 'dark' | 'blue'; href?: string }) {
+  const content = <><span>{label}</span><strong>{value}</strong><small>{note}</small>{href && <b className="dashboard-stat-arrow" aria-hidden="true">→</b>}</>
+  return href
+    ? <Link className={`dashboard-stat dashboard-stat-${tone} dashboard-stat-link`} href={href} aria-label={`${label}: ${value}. Detayları görüntüle`}>{content}</Link>
+    : <article className={`dashboard-stat dashboard-stat-${tone}`}>{content}</article>
 }
 
 export function DashboardDate() {
