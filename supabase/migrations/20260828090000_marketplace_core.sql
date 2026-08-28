@@ -17,6 +17,19 @@ create table if not exists public.profiles (
   updated_at timestamptz not null default now()
 );
 
+-- Eski kurulumlarda profiles tablosu daha az alanla oluşturulmuş olabilir.
+-- CREATE TABLE IF NOT EXISTS mevcut tabloya yeni sütun eklemediği için alanları ayrıca tamamla.
+alter table public.profiles add column if not exists company_name text;
+alter table public.profiles add column if not exists title text;
+alter table public.profiles add column if not exists bio text;
+alter table public.profiles add column if not exists skills text[] not null default '{}';
+alter table public.profiles add column if not exists hourly_rate numeric(12,2);
+alter table public.profiles add column if not exists experience_years integer;
+alter table public.profiles add column if not exists avatar_url text;
+alter table public.profiles add column if not exists portfolio_url text;
+alter table public.profiles add column if not exists stripe_account_id text;
+alter table public.profiles add column if not exists updated_at timestamptz not null default now();
+
 create table if not exists public.portfolio_items (
   id uuid primary key default gen_random_uuid(),
   profile_id uuid not null references public.profiles(id) on delete cascade,
