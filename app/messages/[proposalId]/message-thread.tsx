@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { sendMessage } from '@/lib/actions/marketplace'
 
@@ -16,6 +16,13 @@ type MessageThreadProps = {
 
 export function MessageThread({ proposalId, userId, currentUserName, counterpartName, initialMessages }: MessageThreadProps) {
   const [messages, setMessages] = useState(initialMessages)
+  const messageListRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const messageList = messageListRef.current
+    if (!messageList) return
+    messageList.scrollTo({ top: messageList.scrollHeight, behavior: 'smooth' })
+  }, [messages.length])
 
   useEffect(() => {
     const supabase = createClient()
@@ -29,7 +36,7 @@ export function MessageThread({ proposalId, userId, currentUserName, counterpart
   }, [proposalId])
 
   return <div className="message-thread">
-    <div className="message-list">
+    <div className="message-list" ref={messageListRef}>
       {messages.map((message) => {
         const isMine = message.sender_id === userId
 
@@ -41,6 +48,28 @@ export function MessageThread({ proposalId, userId, currentUserName, counterpart
       })}
       {messages.length === 0 && <div className="marketplace-empty"><p>İlk mesajı göndererek çalışma alanını başlat.</p></div>}
     </div>
-    <form action={sendMessage.bind(null, proposalId)} className="message-composer"><textarea name="body" required maxLength={3000} rows={3} placeholder="Mesajını yaz…" /><button type="submit">Gönder →</button></form>
+    <form action={sendMessage.bind(null, proposalId)} className="message-composer">
+      <div className="message-composer-field">
+        <textarea
+          aria-label="Mesaj"
+          name="body"
+          required
+          maxLength={3000}
+          rows={1}
+          placeholder="Mesaj yaz"
+          onInput={(event: FormEvent<HTMLTextAreaElement>) => {
+            const field = event.currentTarget
+            field.style.height = 'auto'
+            field.style.height = `${Math.min(field.scrollHeight, 120)}px`
+          }}
+          onKeyDown={(event: KeyboardEvent<HTMLTextAreaElement>) => {
+            if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return
+            event.preventDefault()
+            event.currentTarget.form?.requestSubmit()
+          }}
+        />
+      </div>
+      <button type="submit" aria-label="Mesajı gönder" title="Mesajı gönder"><span aria-hidden="true">➤</span></button>
+    </form>
   </div>
 }
