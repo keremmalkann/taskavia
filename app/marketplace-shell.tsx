@@ -8,11 +8,13 @@ export function MarketplaceShell({ name, role, active, children }: { name: strin
     { label: 'Genel bakış', icon: '◫', href: '/freelancer', active: active === 'dashboard' },
     { label: 'İşleri keşfet', icon: '⌕', href: '/jobs', active: active === 'jobs' },
     { label: 'Profilim', icon: '♙', href: '/profile', active: active === 'profile' },
+    { label: 'Ayarlar', icon: '⚙', href: '/settings', active: active === 'settings' },
   ]
   const employerNav = [
     { label: 'Genel bakış', icon: '◫', href: '/employer', active: active === 'dashboard' },
     { label: 'Yeni ilan', icon: '＋', href: '/employer/jobs/new', active: active === 'new-job' },
     { label: 'Profilim', icon: '♙', href: '/profile', active: active === 'profile' },
+    { label: 'Ayarlar', icon: '⚙', href: '/settings', active: active === 'settings' },
   ]
 
   return (
