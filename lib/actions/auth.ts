@@ -101,6 +101,58 @@ export async function signIn(formData: FormData) {
   redirect(data.user.user_metadata.role === 'employer' ? '/employer' : '/freelancer')
 }
 
+export async function requestPasswordReset(formData: FormData) {
+  const email = String(formData.get('email') ?? '').trim().toLowerCase()
+
+  if (!email || !email.includes('@')) {
+    redirect('/forgot-password?error=' + encodeURIComponent('Geçerli bir e-posta adresi gir.'))
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${getSiteUrl()}/auth/callback?next=/reset-password`,
+  })
+
+  if (error?.code === 'over_email_send_rate_limit' || error?.status === 429) {
+    redirect('/forgot-password?error=' + encodeURIComponent('Çok fazla sıfırlama e-postası istendi. Lütfen bir saat sonra tekrar dene.'))
+  }
+
+  if (error) {
+    redirect('/forgot-password?error=' + encodeURIComponent('Sıfırlama bağlantısı şu anda gönderilemedi. Lütfen daha sonra tekrar dene.'))
+  }
+
+  redirect('/forgot-password?message=' + encodeURIComponent('Bu e-posta bir hesaba bağlıysa parola sıfırlama bağlantısı gönderildi.'))
+}
+
+export async function updatePassword(formData: FormData) {
+  const password = String(formData.get('password') ?? '')
+  const passwordConfirmation = String(formData.get('passwordConfirmation') ?? '')
+
+  if (password.length < 8) {
+    redirect('/reset-password?error=' + encodeURIComponent('Yeni parolan en az 8 karakter olmalı.'))
+  }
+
+  if (password !== passwordConfirmation) {
+    redirect('/reset-password?error=' + encodeURIComponent('Parolalar birbiriyle eşleşmiyor.'))
+  }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/forgot-password?error=' + encodeURIComponent('Sıfırlama bağlantısının süresi dolmuş. Lütfen yeni bir bağlantı iste.'))
+  }
+
+  const { error } = await supabase.auth.updateUser({ password })
+
+  if (error) {
+    redirect('/reset-password?error=' + encodeURIComponent('Parola güncellenemedi. Lütfen farklı bir parola dene.'))
+  }
+
+  await supabase.auth.signOut({ scope: 'global' })
+  redirect('/login?message=' + encodeURIComponent('Parolan yenilendi. Yeni parolanla giriş yapabilirsin.'))
+}
+
 export async function signOut() {
   const supabase = await createClient()
   await supabase.auth.signOut()

@@ -16,9 +16,12 @@ export async function createClient() {
         },
         setAll(cookiesToSet) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
+            cookiesToSet.forEach(({ name, value, options }) => {
+              const sessionOptions = { ...options }
+              delete sessionOptions.maxAge
+              delete sessionOptions.expires
+              cookieStore.set(name, value, sessionOptions)
+            })
           } catch {
             // Server Component'ten çağrılırsa göz ardı edilebilir, middleware hallediyor
           }
