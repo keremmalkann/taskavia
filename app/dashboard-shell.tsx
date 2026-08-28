@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { signOut } from '@/lib/actions/auth'
-import { markNotificationsRead } from '@/lib/actions/notifications'
-import { formatNotificationTime, type NotificationFeed } from '@/lib/notifications'
+import { NotificationMenu } from '@/app/notification-menu'
 
 type NavItem = { label: string; icon: string; href?: string; active?: boolean; badge?: string }
 
@@ -9,7 +8,6 @@ export function DashboardShell({ name, roleLabel, navItems, action, children }: 
   name: string
   roleLabel: string
   navItems: NavItem[]
-  notifications: NotificationFeed
   action: React.ReactNode
   children: React.ReactNode
 }) {
@@ -41,16 +39,7 @@ export function DashboardShell({ name, roleLabel, navItems, action, children }: 
         <header className="dashboard-topbar">
           <div><span className="status-dot" /> Hesabın aktif</div>
           <div className="dashboard-top-actions">
-            <details className="notification-menu">
-              <summary aria-label="Bildirimleri aç"><span aria-hidden="true">🔔</span>{notifications.unreadCount > 0 && <strong>{Math.min(notifications.unreadCount, 9)}{notifications.unreadCount > 9 ? '+' : ''}</strong>}</summary>
-              <div className="notification-popover">
-                <div className="notification-popover-head"><div><span>BİLDİRİMLER</span><h2>Son gelişmeler</h2></div>{notifications.unreadCount > 0 && <form action={markNotificationsRead}><button type="submit">Tümünü okundu işaretle</button></form>}</div>
-                <div className="notification-popover-list">
-                  {notifications.items.length > 0 ? notifications.items.map((item) => <Link href={item.href} className={item.unread ? 'unread' : ''} key={item.id}><i className={`notification-kind ${item.kind}`} aria-hidden="true">{item.kind === 'message' ? '✉' : item.kind === 'payment' ? '₺' : '↗'}</i><span><strong>{item.title}</strong><small>{item.body}</small><time>{formatNotificationTime(item.createdAt)}</time></span></Link>) : <p>Henüz bildirimin yok.</p>}
-                </div>
-                <Link className="notification-all-link" href="/notifications">Tüm bildirimleri gör →</Link>
-              </div>
-            </details>
+            <NotificationMenu />
             {action}
           </div>
         </header>
