@@ -239,6 +239,24 @@ alter table public.messages enable row level security;
 alter table public.payments enable row level security;
 alter table public.reviews enable row level security;
 
+drop policy if exists "Authenticated users can view profiles" on public.profiles;
+drop policy if exists "Users can update own profile" on public.profiles;
+drop policy if exists "Users can insert own profile" on public.profiles;
+drop policy if exists "Authenticated users can view portfolio" on public.portfolio_items;
+drop policy if exists "Freelancers manage own portfolio" on public.portfolio_items;
+drop policy if exists "Open jobs and participant jobs are visible" on public.jobs;
+drop policy if exists "Employers create jobs" on public.jobs;
+drop policy if exists "Employers update own jobs" on public.jobs;
+drop policy if exists "Proposal participants can view" on public.proposals;
+drop policy if exists "Freelancers create proposals" on public.proposals;
+drop policy if exists "Freelancers withdraw proposals" on public.proposals;
+drop policy if exists "Employers manage received proposals" on public.proposals;
+drop policy if exists "Conversation participants can view messages" on public.messages;
+drop policy if exists "Conversation participants can send messages" on public.messages;
+drop policy if exists "Payment participants can view" on public.payments;
+drop policy if exists "Authenticated users can view reviews" on public.reviews;
+drop policy if exists "Completed job participants can review" on public.reviews;
+
 create policy "Authenticated users can view profiles" on public.profiles for select to authenticated using (true);
 create policy "Users can update own profile" on public.profiles for update to authenticated using (auth.uid() = id) with check (auth.uid() = id);
 create policy "Users can insert own profile" on public.profiles for insert to authenticated with check (auth.uid() = id);
@@ -287,6 +305,11 @@ insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
 values ('portfolios', 'portfolios', true, 10485760, array['image/jpeg','image/png','image/webp','application/pdf'])
 on conflict (id) do update set public = excluded.public, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
 
+drop policy if exists "Portfolio files are public" on storage.objects;
+drop policy if exists "Users upload own portfolio files" on storage.objects;
+drop policy if exists "Users update own portfolio files" on storage.objects;
+drop policy if exists "Users delete own portfolio files" on storage.objects;
+
 create policy "Portfolio files are public" on storage.objects for select using (bucket_id = 'portfolios');
 create policy "Users upload own portfolio files" on storage.objects for insert to authenticated with check (
   bucket_id = 'portfolios' and (storage.foldername(name))[1] = auth.uid()::text
@@ -298,4 +321,13 @@ create policy "Users delete own portfolio files" on storage.objects for delete t
   bucket_id = 'portfolios' and (storage.foldername(name))[1] = auth.uid()::text
 );
 
-alter publication supabase_realtime add table public.messages;
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'messages'
+  ) then
+    alter publication supabase_realtime add table public.messages;
+  end if;
+end;
+$$;
