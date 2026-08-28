@@ -7,7 +7,7 @@ import { categories, formatCurrency, formatDate } from '@/lib/marketplace'
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'İşleri Keşfet — İşlik', description: 'Açık freelancer ilanlarını ara ve filtrele.' }
 
-export default async function JobsPage({ searchParams }: { searchParams: Promise<{ q?: string; category?: string; minBudget?: string; skill?: string }> }) {
+export default async function JobsPage({ searchParams }: { searchParams: Promise<{ q?: string; category?: string; minBudget?: string }> }) {
   const filters = await searchParams
   const { supabase, fullName } = await requireRole('freelancer')
   const selectedCategory = categories.includes(filters.category as (typeof categories)[number]) ? filters.category : ''
@@ -15,7 +15,6 @@ export default async function JobsPage({ searchParams }: { searchParams: Promise
   if (filters.q) query = query.ilike('title', `%${filters.q.slice(0, 80)}%`)
   if (selectedCategory) query = query.eq('category', selectedCategory)
   if (Number(filters.minBudget) > 0) query = query.gte('budget_max', Number(filters.minBudget))
-  if (filters.skill) query = query.contains('skills', [filters.skill.slice(0, 40)])
   const { data: jobs, error } = await query.limit(50)
 
   return (
@@ -26,16 +25,14 @@ export default async function JobsPage({ searchParams }: { searchParams: Promise
           const params = new URLSearchParams()
           if (item.value) params.set('category', item.value)
           if (filters.q) params.set('q', filters.q)
-          if (filters.skill) params.set('skill', filters.skill)
           if (filters.minBudget) params.set('minBudget', filters.minBudget)
           const href = params.size > 0 ? `/jobs?${params.toString()}` : '/jobs'
           return <Link className={(selectedCategory || '') === item.value ? 'active' : ''} href={href} key={item.label}><span aria-hidden="true">{item.icon}</span><strong>{item.label}</strong></Link>
         })}
       </nav>
-      <form className="job-filters">
+      <form className="job-filters job-filters-simple">
+        {selectedCategory && <input type="hidden" name="category" value={selectedCategory} />}
         <label className="job-search"><span>⌕</span><input name="q" defaultValue={filters.q} placeholder="İlanlarda ara…" /></label>
-        <select name="category" defaultValue={selectedCategory}><option value="">Tüm kategoriler</option>{categories.map((category) => <option key={category}>{category}</option>)}</select>
-        <input name="skill" defaultValue={filters.skill} placeholder="Beceri" />
         <input name="minBudget" type="number" min="0" defaultValue={filters.minBudget} placeholder="Min. bütçe" />
         <button type="submit">Filtrele</button>
       </form>
