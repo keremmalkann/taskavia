@@ -10,19 +10,31 @@ export const metadata: Metadata = { title: 'İşleri Keşfet — İşlik', descr
 export default async function JobsPage({ searchParams }: { searchParams: Promise<{ q?: string; category?: string; minBudget?: string; skill?: string }> }) {
   const filters = await searchParams
   const { supabase, fullName } = await requireRole('freelancer')
+  const selectedCategory = categories.includes(filters.category as (typeof categories)[number]) ? filters.category : ''
   let query = supabase.from('jobs').select('*, employer:profiles!jobs_employer_id_fkey(full_name, company_name)').eq('status', 'open').order('created_at', { ascending: false })
   if (filters.q) query = query.ilike('title', `%${filters.q.slice(0, 80)}%`)
-  if (filters.category) query = query.eq('category', filters.category)
+  if (selectedCategory) query = query.eq('category', selectedCategory)
   if (Number(filters.minBudget) > 0) query = query.gte('budget_max', Number(filters.minBudget))
   if (filters.skill) query = query.contains('skills', [filters.skill.slice(0, 40)])
   const { data: jobs, error } = await query.limit(50)
 
   return (
     <MarketplaceShell name={fullName} role="freelancer" active="jobs">
-      <div className="marketplace-page-head"><div><p>AÇIK İLANLAR</p><h1>Doğru işi bul.</h1><span>Yeteneklerine, bütçene ve çalışma takvimine uyan projeleri keşfet.</span></div><strong>{jobs?.length ?? 0} sonuç</strong></div>
+      <div className="marketplace-page-head"><div><p>AÇIK İLANLAR</p><h1>{selectedCategory ? `${selectedCategory} işleri` : 'Doğru işi bul.'}</h1><span>{selectedCategory ? `${selectedCategory} kategorisindeki açık projeleri karşılaştır.` : 'Yeteneklerine, bütçene ve çalışma takvimine uyan projeleri keşfet.'}</span></div><strong>{jobs?.length ?? 0} sonuç</strong></div>
+      <nav className="job-category-picker" aria-label="İş kategorileri">
+        {[{ label: 'Tüm işler', value: '', icon: '✦' }, { label: 'Yazılım', value: 'Yazılım', icon: '</>' }, { label: 'Tasarım', value: 'Tasarım', icon: '◇' }, { label: 'Pazarlama', value: 'Pazarlama', icon: '↗' }, { label: 'İçerik', value: 'İçerik', icon: 'Aa' }, { label: 'Video & Ses', value: 'Video & Ses', icon: '▶' }, { label: 'Danışmanlık', value: 'Danışmanlık', icon: '◎' }].map((item) => {
+          const params = new URLSearchParams()
+          if (item.value) params.set('category', item.value)
+          if (filters.q) params.set('q', filters.q)
+          if (filters.skill) params.set('skill', filters.skill)
+          if (filters.minBudget) params.set('minBudget', filters.minBudget)
+          const href = params.size > 0 ? `/jobs?${params.toString()}` : '/jobs'
+          return <Link className={(selectedCategory || '') === item.value ? 'active' : ''} href={href} key={item.label}><span aria-hidden="true">{item.icon}</span><strong>{item.label}</strong></Link>
+        })}
+      </nav>
       <form className="job-filters">
         <label className="job-search"><span>⌕</span><input name="q" defaultValue={filters.q} placeholder="İlanlarda ara…" /></label>
-        <select name="category" defaultValue={filters.category ?? ''}><option value="">Tüm kategoriler</option>{categories.map((category) => <option key={category}>{category}</option>)}</select>
+        <select name="category" defaultValue={selectedCategory}><option value="">Tüm kategoriler</option>{categories.map((category) => <option key={category}>{category}</option>)}</select>
         <input name="skill" defaultValue={filters.skill} placeholder="Beceri" />
         <input name="minBudget" type="number" min="0" defaultValue={filters.minBudget} placeholder="Min. bütçe" />
         <button type="submit">Filtrele</button>
