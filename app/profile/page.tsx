@@ -1,11 +1,16 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
-import { MarketplaceShell, Feedback, SetupNotice } from '@/app/marketplace-shell'
-import { updateProfile } from '@/lib/actions/marketplace'
+import { Feedback, MarketplaceShell, SetupNotice } from '@/app/marketplace-shell'
+import { createPortfolioItem, deletePortfolioItem, updateProfile } from '@/lib/actions/marketplace'
 import { requireUser } from '@/lib/auth/role'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Profilim — İşlik', description: 'İşlik profil bilgilerini, yeteneklerini ve portföyünü yönet.' }
+
+function isPortfolioImage(url: string | null) {
+  return Boolean(url && /\.(?:jpe?g|png|webp)(?:\?|$)/i.test(url))
+}
 
 export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ error?: string; message?: string }> }) {
   const params = await searchParams
@@ -16,36 +21,65 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     supabase.from('portfolio_items').select('*').eq('profile_id', user.id).order('created_at', { ascending: false }),
   ])
   const average = reviews?.length ? (reviews.reduce((sum, review) => sum + Number(review.rating), 0) / reviews.length).toFixed(1) : null
+  const completedFields = role === 'freelancer'
+    ? [profile?.full_name, profile?.title, profile?.bio, profile?.skills?.length, profile?.hourly_rate != null, profile?.experience_years != null, portfolio?.length]
+    : [profile?.full_name, profile?.title, profile?.bio, profile?.company_name]
+  const completion = Math.round((completedFields.filter(Boolean).length / completedFields.length) * 100)
 
   return (
     <MarketplaceShell name={profile?.full_name ?? fullName} role={role} active="profile">
-      <div className="marketplace-page-head"><div><p>HESAP & PORTFÖY</p><h1>Profilini tamamla.</h1><span>Doğru bilgiler, daha iyi eşleşmeler ve daha güçlü bir güven profili oluşturur.</span></div><Link href={role === 'employer' ? '/employer' : '/freelancer'}>Panele dön →</Link></div>
+      <div className="marketplace-page-head profile-manage-head"><div><p>HESAP & PORTFÖY</p><h1>Profilini tamamla.</h1><span>Doğru bilgiler, daha iyi eşleşmeler ve daha güçlü bir güven profili oluşturur.</span></div><div className="profile-head-actions"><Link href={`/profiles/${user.id}`}>Herkese açık profili gör →</Link><Link href={role === 'employer' ? '/employer' : '/freelancer'}>Panele dön →</Link></div></div>
       <Feedback {...params} />
       {profileError && <SetupNotice />}
       <div className="profile-layout">
-        <form action={updateProfile} className="marketplace-form" encType="multipart/form-data">
+        <form action={updateProfile} className="marketplace-form">
           <div className="form-section-title"><span>01</span><div><h2>Temel bilgiler</h2><p>Profilinde görünen kişisel veya şirket bilgilerin.</p></div></div>
           <div className="form-grid two"><label>Ad Soyad<input name="fullName" required minLength={2} defaultValue={profile?.full_name ?? fullName} /></label><label>{role === 'employer' ? 'Pozisyon' : 'Uzmanlık başlığı'}<input name="title" defaultValue={profile?.title ?? ''} placeholder={role === 'employer' ? 'Kurucu, İnsan Kaynakları…' : 'Product Designer, Frontend Developer…'} /></label></div>
           {role === 'employer' && <label>Şirket adı<input name="companyName" defaultValue={profile?.company_name ?? ''} placeholder="Şirket veya marka adı" /></label>}
-          <label>Hakkında<textarea name="bio" rows={5} defaultValue={profile?.bio ?? ''} placeholder="Deneyimini, çalışma biçimini ve hedeflerini anlat." /></label>
+          <label>Hakkında<textarea name="bio" rows={5} maxLength={1500} defaultValue={profile?.bio ?? ''} placeholder="Deneyimini, çalışma biçimini ve hedeflerini anlat." /></label>
           {role === 'freelancer' && <>
             <div className="form-section-title"><span>02</span><div><h2>Uzmanlık & ücret</h2><p>İşverenlerin seni doğru projelerle eşleştirmesini sağlar.</p></div></div>
             <label>Yetenekler<input name="skills" defaultValue={profile?.skills?.join(', ') ?? ''} placeholder="Figma, React, Marka Stratejisi (virgülle ayır)" /></label>
-            <div className="form-grid two"><label>Saatlik ücret (₺)<input name="hourlyRate" type="number" min="0" defaultValue={profile?.hourly_rate ?? ''} /></label><label>Deneyim (yıl)<input name="experienceYears" type="number" min="0" defaultValue={profile?.experience_years ?? ''} /></label></div>
-            <div className="form-section-title"><span>03</span><div><h2>Portföy & ödeme</h2><p>PDF veya görsel yükle; ödeme için Stripe Connect hesabını bağla.</p></div></div>
-            <label>Portföy dosyası<input name="portfolioFile" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" /></label>
+            <div className="form-grid two"><label>Saatlik ücret (₺)<input name="hourlyRate" type="number" min="0" step="1" defaultValue={profile?.hourly_rate ?? ''} /></label><label>Deneyim (yıl)<input name="experienceYears" type="number" min="0" step="1" defaultValue={profile?.experience_years ?? ''} /></label></div>
+            <div className="form-section-title"><span>03</span><div><h2>Ödeme bilgisi</h2><p>Kabul edilen işler için ödeme hesabını bağla.</p></div></div>
             <label>Stripe Connect hesap kimliği<input name="stripeAccountId" defaultValue={profile?.stripe_account_id ?? ''} placeholder="acct_..." /></label>
           </>}
           <button className="marketplace-submit" type="submit">Profili kaydet →</button>
         </form>
         <aside className="profile-preview">
-          <span className="profile-preview-label">PROFİL ÖNİZLEMESİ</span><div className="profile-large-avatar">{(profile?.full_name ?? fullName).slice(0, 2).toLocaleUpperCase('tr-TR')}</div><h2>{profile?.full_name ?? fullName}</h2><p>{profile?.title ?? (role === 'employer' ? 'İşveren' : 'Freelancer')}</p>
-          {role === 'freelancer' && <div className="profile-mini-stats"><div><strong>{profile?.experience_years ?? 0}</strong><span>yıl deneyim</span></div><div><strong>{profile?.hourly_rate ? `₺${profile.hourly_rate}` : '—'}</strong><span>saatlik</span></div><div><strong>{average ?? 'Yeni'}</strong><span>puan</span></div></div>}
-          {profile?.portfolio_url && <a className="profile-file-link" href={profile.portfolio_url} target="_blank" rel="noreferrer">Portföy dosyasını aç ↗</a>}
-          {portfolio && portfolio.length > 0 && <div className="profile-portfolio-count">{portfolio.length} portföy çalışması</div>}
+          <div className="profile-preview-top"><span className="profile-preview-label">PROFİL ÖNİZLEMESİ</span><strong>{completion}% tamamlandı</strong></div>
+          <div className="profile-completion"><i style={{ width: `${completion}%` }} /></div>
+          <div className="profile-large-avatar">{(profile?.full_name ?? fullName).slice(0, 2).toLocaleUpperCase('tr-TR')}</div><h2>{profile?.full_name ?? fullName}</h2><p>{profile?.title ?? (role === 'employer' ? 'İşveren' : 'Freelancer')}</p>
+          {role === 'employer' && profile?.company_name && <div className="profile-company-name">{profile.company_name}</div>}
+          {role === 'freelancer' && <div className="profile-mini-stats"><div><strong>{profile?.experience_years ?? 0}</strong><span>yıl deneyim</span></div><div><strong>{profile?.hourly_rate != null ? `₺${profile.hourly_rate}` : '—'}</strong><span>saatlik</span></div><div><strong>{average ?? 'Yeni'}</strong><span>puan</span></div></div>}
+          {profile?.portfolio_url && <a className="profile-file-link" href={profile.portfolio_url} target="_blank" rel="noreferrer">Önceki portföy dosyasını aç ↗</a>}
+          {role === 'freelancer' && <div className="profile-portfolio-count">{portfolio?.length ?? 0} portföy çalışması</div>}
           <div className="profile-review-list"><h3>Son değerlendirmeler</h3>{reviews?.length ? reviews.map((review, index) => <article key={index}><strong>{'★'.repeat(review.rating)}</strong><p>{review.comment || 'Yorum bırakılmadı.'}</p></article>) : <p>Henüz değerlendirme yok.</p>}</div>
         </aside>
       </div>
+
+      {role === 'freelancer' && <section className="portfolio-manager">
+        <div className="dashboard-section-title"><div><p>PORTFÖY VİTRİNİ</p><h2>Çalışmalarını sergile</h2></div><span>{portfolio?.length ?? 0} çalışma</span></div>
+        <div className="portfolio-manager-layout">
+          <form action={createPortfolioItem} className="portfolio-upload-form" encType="multipart/form-data">
+            <span>YENİ ÇALIŞMA</span>
+            <h3>Portföye ekle</h3>
+            <label>Çalışma başlığı<input name="title" minLength={2} maxLength={100} required placeholder="Örn. Mobil bankacılık arayüzü" /></label>
+            <label>Kısa açıklama<textarea name="description" rows={4} maxLength={1500} placeholder="Projede ne yaptığını ve sonucu kısaca anlat." /></label>
+            <label className="portfolio-file-field">Görsel veya PDF<input name="file" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required /><small>JPG, PNG, WebP veya PDF · En fazla 10 MB</small></label>
+            <button type="submit">Çalışmayı yayınla →</button>
+          </form>
+          <div className="portfolio-manage-grid">
+            {portfolio?.map((item) => <article key={item.id}>
+              <a className={`portfolio-card-media ${isPortfolioImage(item.file_url) ? '' : 'document'}`} href={item.file_url || '#'} target="_blank" rel="noreferrer">
+                {isPortfolioImage(item.file_url) ? <Image src={item.file_url} width={800} height={500} alt={item.title} /> : <><strong>PDF</strong><span>Dosyayı aç ↗</span></>}
+              </a>
+              <div className="portfolio-card-copy"><div><h3>{item.title}</h3><p>{item.description || 'Açıklama eklenmedi.'}</p></div><details><summary>Kaldır</summary><form action={deletePortfolioItem.bind(null, item.id)}><p>Bu çalışma ve dosyası kalıcı olarak silinecek.</p><button type="submit">Silme işlemini onayla</button></form></details></div>
+            </article>)}
+            {portfolio?.length === 0 && <div className="marketplace-empty portfolio-manager-empty"><strong>Vitrinin henüz boş.</strong><p>İşverenlerin yeteneğini görebilmesi için ilk çalışmanı ekle.</p></div>}
+          </div>
+        </div>
+      </section>}
     </MarketplaceShell>
   )
 }
