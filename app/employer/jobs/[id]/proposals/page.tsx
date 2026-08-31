@@ -114,6 +114,7 @@ export default async function ProposalComparisonPage({ params, searchParams }: {
             <div className="comparison-message"><small>ADAYIN MESAJI</small><p>{proposal.message}</p></div>
             <footer>
               <span>{formatDate(proposal.created_at)} tarihinde gönderildi</span>
+              <Link className="comparison-profile-link" href={`/profiles/${proposal.freelancer_id}`}>Profili ve portföyü incele →</Link>
               {proposal.status === 'pending' && job.status === 'open' && <form action={acceptProposal.bind(null, job.id, proposal.id)}><label><input type="checkbox" required /> Bu freelancer ile çalışmayı onaylıyorum.</label><button type="submit">Teklifi kabul et →</button></form>}
               {proposal.status === 'accepted' && <Link href={`/messages/${proposal.id}`}>Mesajlaşmaya git →</Link>}
             </footer>

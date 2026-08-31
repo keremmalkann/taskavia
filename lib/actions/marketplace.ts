@@ -15,23 +15,43 @@ function go(path: string, kind: 'error' | 'message', message: string): never {
   redirect(`${path}?${kind}=${encodeURIComponent(message)}`)
 }
 
+const portfolioTypes: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'application/pdf': 'pdf',
+}
+
+function storagePathFromPublicUrl(url: string) {
+  const marker = '/storage/v1/object/public/portfolios/'
+  const markerIndex = url.indexOf(marker)
+  if (markerIndex === -1) return null
+  return decodeURIComponent(url.slice(markerIndex + marker.length))
+}
+
 export async function updateProfile(formData: FormData) {
   const { supabase, user, role } = await requireUser()
   const fullName = text(formData, 'fullName')
   const title = text(formData, 'title')
   const companyName = text(formData, 'companyName')
   const bio = text(formData, 'bio')
-  const hourlyRate = Number(text(formData, 'hourlyRate')) || null
-  const experienceYears = Number(text(formData, 'experienceYears')) || null
+  const hourlyRateValue = text(formData, 'hourlyRate')
+  const experienceYearsValue = text(formData, 'experienceYears')
+  const hourlyRate = hourlyRateValue === '' ? null : Number(hourlyRateValue)
+  const experienceYears = experienceYearsValue === '' ? null : Number(experienceYearsValue)
   const stripeAccountId = text(formData, 'stripeAccountId')
 
   if (fullName.length < 2) go('/profile', 'error', 'Ad soyad en az 2 karakter olmalı.')
+  if (title.length > 120 || companyName.length > 160 || bio.length > 1500) go('/profile', 'error', 'Profil alanlarından biri izin verilen uzunluğu aşıyor.')
+  if (hourlyRate != null && (!Number.isFinite(hourlyRate) || hourlyRate < 0)) go('/profile', 'error', 'Saatlik ücret geçerli bir sayı olmalı.')
+  if (experienceYears != null && (!Number.isInteger(experienceYears) || experienceYears < 0)) go('/profile', 'error', 'Deneyim yılı sıfır veya daha büyük bir tam sayı olmalı.')
 
   let portfolioUrl: string | undefined
   const file = formData.get('portfolioFile')
   if (file instanceof File && file.size > 0) {
     if (file.size > 10 * 1024 * 1024) go('/profile', 'error', 'Portföy dosyası en fazla 10 MB olabilir.')
-    const extension = file.name.split('.').pop()?.replace(/[^a-zA-Z0-9]/g, '') || 'bin'
+    const extension = portfolioTypes[file.type]
+    if (!extension) go('/profile', 'error', 'Yalnızca JPG, PNG, WebP veya PDF yükleyebilirsin.')
     const path = `${user.id}/${crypto.randomUUID()}.${extension}`
     const { error: uploadError } = await supabase.storage.from('portfolios').upload(path, file, { contentType: file.type, upsert: false })
     if (uploadError) go('/profile', 'error', 'Portföy dosyası yüklenemedi. Storage kurulumunu kontrol et.')
@@ -58,6 +78,66 @@ export async function updateProfile(formData: FormData) {
   await supabase.auth.updateUser({ data: { full_name: fullName, role } })
   revalidatePath('/profile')
   go('/profile', 'message', 'Profilin başarıyla güncellendi.')
+}
+
+export async function createPortfolioItem(formData: FormData) {
+  const { supabase, user } = await requireRole('freelancer')
+  const title = text(formData, 'title')
+  const description = text(formData, 'description')
+  const file = formData.get('file')
+
+  if (title.length < 2 || title.length > 100) go('/profile', 'error', 'Portföy başlığı 2–100 karakter olmalı.')
+  if (description.length > 1500) go('/profile', 'error', 'Portföy açıklaması en fazla 1500 karakter olabilir.')
+  if (!(file instanceof File) || file.size === 0) go('/profile', 'error', 'Portföy çalışman için bir görsel veya PDF seç.')
+  if (file.size > 10 * 1024 * 1024) go('/profile', 'error', 'Portföy dosyası en fazla 10 MB olabilir.')
+
+  const extension = portfolioTypes[file.type]
+  if (!extension) go('/profile', 'error', 'Yalnızca JPG, PNG, WebP veya PDF yükleyebilirsin.')
+
+  const path = `${user.id}/works/${crypto.randomUUID()}.${extension}`
+  const { error: uploadError } = await supabase.storage.from('portfolios').upload(path, file, { contentType: file.type, upsert: false })
+  if (uploadError) go('/profile', 'error', 'Portföy dosyası yüklenemedi. Lütfen yeniden dene.')
+
+  const fileUrl = supabase.storage.from('portfolios').getPublicUrl(path).data.publicUrl
+  const { error: insertError } = await supabase.from('portfolio_items').insert({
+    profile_id: user.id,
+    title,
+    description: description || null,
+    file_url: fileUrl,
+  })
+  if (insertError) {
+    await supabase.storage.from('portfolios').remove([path])
+    go('/profile', 'error', messageFromError(insertError, 'Portföy çalışması kaydedilemedi.'))
+  }
+
+  revalidatePath('/profile')
+  revalidatePath(`/profiles/${user.id}`)
+  go('/profile', 'message', 'Portföy çalışman yayınlandı.')
+}
+
+export async function deletePortfolioItem(itemId: string) {
+  const { supabase, user } = await requireRole('freelancer')
+  const { data: item, error: findError } = await supabase
+    .from('portfolio_items')
+    .select('id, file_url')
+    .eq('id', itemId)
+    .eq('profile_id', user.id)
+    .maybeSingle()
+
+  if (findError || !item) go('/profile', 'error', 'Portföy çalışması bulunamadı.')
+
+  const storagePath = item.file_url ? storagePathFromPublicUrl(item.file_url) : null
+  if (storagePath) {
+    const { error: storageError } = await supabase.storage.from('portfolios').remove([storagePath])
+    if (storageError) go('/profile', 'error', 'Portföy dosyası silinemedi. Lütfen yeniden dene.')
+  }
+
+  const { error: deleteError } = await supabase.from('portfolio_items').delete().eq('id', item.id).eq('profile_id', user.id)
+  if (deleteError) go('/profile', 'error', 'Portföy çalışması silinemedi.')
+
+  revalidatePath('/profile')
+  revalidatePath(`/profiles/${user.id}`)
+  go('/profile', 'message', 'Portföy çalışması kaldırıldı.')
 }
 
 export async function createJob(formData: FormData) {
