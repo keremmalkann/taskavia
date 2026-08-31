@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { MarketplaceShell, Feedback, SetupNotice } from '@/app/marketplace-shell'
-import { acceptProposal, completeJob, createProposal } from '@/lib/actions/marketplace'
+import { completeJob, createProposal } from '@/lib/actions/marketplace'
 import { requireUser } from '@/lib/auth/role'
 import { formatCurrency, formatDate } from '@/lib/marketplace'
 
@@ -33,7 +33,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
           {isOwner && <div className="owner-job-actions"><strong>{proposals?.length ?? 0} teklif</strong><p>İlan durumu: {job.status}</p>{job.status === 'assigned' && <form action={completeJob.bind(null, id)}><button type="submit">İşi tamamlandı olarak işaretle</button></form>}{accepted && <Link href={`/messages/${accepted.id}`}>Çalışma alanını aç →</Link>}</div>}
         </aside>
       </div>
-      {isOwner && <section className="proposal-section"><div className="dashboard-section-title"><div><p>GELEN TEKLİFLER</p><h2>Adayları karşılaştır</h2></div></div><div className="proposal-grid">{proposals?.map((proposal) => { const freelancer = Array.isArray(proposal.freelancer) ? proposal.freelancer[0] : proposal.freelancer; return <article key={proposal.id}><div className="proposal-person"><span>{freelancer?.full_name?.slice(0,2).toLocaleUpperCase('tr-TR')}</span><div><strong>{freelancer?.full_name}</strong><small>{freelancer?.title || 'Freelancer'}</small></div><em>{proposal.status}</em></div><p>{proposal.message}</p><div className="proposal-numbers"><div><small>TEKLİF</small><strong>{formatCurrency(proposal.price)}</strong></div><div><small>SÜRE</small><strong>{proposal.duration_days} gün</strong></div></div>{proposal.status === 'pending' && job.status === 'open' && <form action={acceptProposal.bind(null, id, proposal.id)}><button type="submit">Teklifi kabul et →</button></form>}{proposal.status === 'accepted' && <Link href={`/messages/${proposal.id}`}>Mesaj gönder →</Link>}</article> })}{proposals?.length === 0 && <div className="marketplace-empty"><p>Henüz teklif gelmedi.</p></div>}</div></section>}
+      {isOwner && <section className="proposal-section"><div className="dashboard-section-title"><div><p>GELEN TEKLİFLER</p><h2>Adayları karşılaştır</h2></div><Link href={`/employer/jobs/${id}/proposals`}>Karşılaştırma ekranını aç →</Link></div><div className="proposal-grid">{proposals?.map((proposal) => { const freelancer = Array.isArray(proposal.freelancer) ? proposal.freelancer[0] : proposal.freelancer; return <article key={proposal.id}><div className="proposal-person"><span>{freelancer?.full_name?.slice(0,2).toLocaleUpperCase('tr-TR')}</span><div><strong>{freelancer?.full_name}</strong><small>{freelancer?.title || 'Freelancer'}</small></div><em>{proposal.status}</em></div><p>{proposal.message}</p><div className="proposal-numbers"><div><small>TEKLİF</small><strong>{formatCurrency(proposal.price)}</strong></div><div><small>SÜRE</small><strong>{proposal.duration_days} gün</strong></div></div>{proposal.status === 'pending' && job.status === 'open' && <Link href={`/employer/jobs/${id}/proposals`}>Karşılaştır ve karar ver →</Link>}{proposal.status === 'accepted' && <Link href={`/messages/${proposal.id}`}>Mesaj gönder →</Link>}</article> })}{proposals?.length === 0 && <div className="marketplace-empty"><p>Henüz teklif gelmedi.</p></div>}</div></section>}
     </>}
   </MarketplaceShell>
 }
