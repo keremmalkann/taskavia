@@ -140,6 +140,47 @@ export async function deletePortfolioItem(itemId: string) {
   go('/profile', 'message', 'Portföy çalışması kaldırıldı.')
 }
 
+export async function uploadResume(formData: FormData) {
+  const { supabase, user } = await requireRole('freelancer')
+  const file = formData.get('resume')
+
+  if (!(file instanceof File) || file.size === 0) go('/profile', 'error', 'Yüklemek için bir özgeçmiş PDF’i seç.')
+  if (file.size > 5 * 1024 * 1024) go('/profile', 'error', 'Özgeçmiş dosyası en fazla 5 MB olabilir.')
+  if (file.type !== 'application/pdf' || await file.slice(0, 5).text() !== '%PDF-') go('/profile', 'error', 'Özgeçmiş yalnızca geçerli bir PDF dosyası olabilir.')
+
+  const { data: currentProfile, error: profileError } = await supabase.from('profiles').select('resume_path').eq('id', user.id).single()
+  if (profileError) go('/profile', 'error', 'Özgeçmiş alanı henüz kurulmadı. Yeni Supabase migration dosyasını çalıştır.')
+
+  const resumePath = `${user.id}/resume-${crypto.randomUUID()}.pdf`
+  const { error: uploadError } = await supabase.storage.from('resumes').upload(resumePath, file, { contentType: 'application/pdf', upsert: false })
+  if (uploadError) go('/profile', 'error', 'Özgeçmiş yüklenemedi. Özel dosya alanının kurulumunu kontrol et.')
+
+  const { error: updateError } = await supabase.from('profiles').update({ resume_path: resumePath }).eq('id', user.id)
+  if (updateError) {
+    await supabase.storage.from('resumes').remove([resumePath])
+    go('/profile', 'error', 'Özgeçmiş profilinle ilişkilendirilemedi.')
+  }
+
+  if (currentProfile.resume_path) await supabase.storage.from('resumes').remove([currentProfile.resume_path])
+  revalidatePath('/profile')
+  revalidatePath(`/profiles/${user.id}`)
+  go('/profile', 'message', currentProfile.resume_path ? 'Özgeçmişin güncellendi.' : 'Özgeçmişin profiline eklendi.')
+}
+
+export async function deleteResume() {
+  const { supabase, user } = await requireRole('freelancer')
+  const { data: profile, error: profileError } = await supabase.from('profiles').select('resume_path').eq('id', user.id).single()
+  if (profileError || !profile?.resume_path) go('/profile', 'error', 'Silinecek bir özgeçmiş bulunamadı.')
+
+  const { error: updateError } = await supabase.from('profiles').update({ resume_path: null }).eq('id', user.id)
+  if (updateError) go('/profile', 'error', 'Özgeçmiş profilinden kaldırılamadı.')
+  await supabase.storage.from('resumes').remove([profile.resume_path])
+
+  revalidatePath('/profile')
+  revalidatePath(`/profiles/${user.id}`)
+  go('/profile', 'message', 'Özgeçmişin profilinden kaldırıldı.')
+}
+
 export async function createJob(formData: FormData) {
   const { supabase, user } = await requireRole('employer')
   const title = text(formData, 'title')

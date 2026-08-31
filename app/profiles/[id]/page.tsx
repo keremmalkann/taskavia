@@ -30,13 +30,17 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 export default async function PublicProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const { supabase, user, role: viewerRole, fullName } = await requireUser()
-  const [{ data: profile, error: profileError }, { data: portfolio }, { data: reviews }] = await Promise.all([
+  const [{ data: profile, error: profileError }, { data: portfolio }, { data: reviews }, { data: resumeProfile }] = await Promise.all([
     supabase.from('profiles').select('id, role, full_name, company_name, title, bio, skills, hourly_rate, experience_years, portfolio_url, created_at').eq('id', id).maybeSingle(),
     supabase.from('portfolio_items').select('id, title, description, file_url, created_at').eq('profile_id', id).order('created_at', { ascending: false }),
     supabase.from('reviews').select('rating, comment, created_at, reviewer:profiles!reviews_reviewer_id_fkey(full_name, company_name)').eq('reviewee_id', id).order('created_at', { ascending: false }),
+    viewerRole === 'employer' || user.id === id ? supabase.from('profiles').select('resume_path').eq('id', id).maybeSingle() : Promise.resolve({ data: null, error: null }),
   ])
 
   if (!profile && !profileError) notFound()
+  const { data: resumeLink } = resumeProfile?.resume_path
+    ? await supabase.storage.from('resumes').createSignedUrl(resumeProfile.resume_path, 60 * 60)
+    : { data: null }
   const average = reviews?.length ? (reviews.reduce((sum, review) => sum + Number(review.rating), 0) / reviews.length).toFixed(1) : null
   const isOwnProfile = user.id === id
   const displayName = profile?.role === 'employer' ? profile.company_name || profile.full_name : profile?.full_name
@@ -73,7 +77,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
           </div></section>}
         </main>
 
-        <aside className="public-reviews"><span>DEĞERLENDİRMELER</span><h2>{average ? `${average} / 5` : 'Henüz puan yok'}</h2><p>{reviews?.length ?? 0} doğrulanmış iş değerlendirmesi</p><div>{reviews?.length ? reviews.map((review, index) => { const reviewer = Array.isArray(review.reviewer) ? review.reviewer[0] : review.reviewer; return <article key={index}><strong>{'★'.repeat(review.rating)}</strong><p>{review.comment || 'Yorum bırakılmadı.'}</p><small>{reviewer?.company_name || reviewer?.full_name || 'İşlik kullanıcısı'} · {formatDate(review.created_at)}</small></article> }) : <div className="public-review-empty">İlk tamamlanan işten sonra değerlendirmeler burada görünecek.</div>}</div>{profile.portfolio_url && <a href={profile.portfolio_url} target="_blank" rel="noreferrer">Önceki portföy dosyasını aç ↗</a>}</aside>
+        <aside className="public-reviews"><span>DEĞERLENDİRMELER</span><h2>{average ? `${average} / 5` : 'Henüz puan yok'}</h2><p>{reviews?.length ?? 0} doğrulanmış iş değerlendirmesi</p>{resumeLink?.signedUrl && <a className="public-resume-link" href={resumeLink.signedUrl} target="_blank" rel="noreferrer"><strong>PDF</strong><span>Özgeçmişi görüntüle ↗</span><small>Bağlantı 1 saat geçerlidir</small></a>}<div>{reviews?.length ? reviews.map((review, index) => { const reviewer = Array.isArray(review.reviewer) ? review.reviewer[0] : review.reviewer; return <article key={index}><strong>{'★'.repeat(review.rating)}</strong><p>{review.comment || 'Yorum bırakılmadı.'}</p><small>{reviewer?.company_name || reviewer?.full_name || 'İşlik kullanıcısı'} · {formatDate(review.created_at)}</small></article> }) : <div className="public-review-empty">İlk tamamlanan işten sonra değerlendirmeler burada görünecek.</div>}</div>{profile.portfolio_url && <a href={profile.portfolio_url} target="_blank" rel="noreferrer">Önceki portföy dosyasını aç ↗</a>}</aside>
       </div>
     </>}
   </MarketplaceShell>

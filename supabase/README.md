@@ -1,9 +1,9 @@
 # İşlik Supabase kurulumu
 
 1. Supabase Dashboard → SQL Editor bölümünü açın.
-2. `migrations/20260828090000_marketplace_core.sql` dosyasının tamamını çalıştırın.
+2. `migrations/20260828090000_marketplace_core.sql` ve ardından `migrations/20260831170000_private_resumes.sql` dosyalarını çalıştırın.
 3. Authentication → URL Configuration altında canlı site adresini izinli yönlendirme adreslerine ekleyin.
-4. Storage altında `portfolios` bucket'ının oluştuğunu doğrulayın.
+4. Storage altında `portfolios` ve özel erişimli `resumes` bucket'larının oluştuğunu doğrulayın.
 5. Realtime → Publications altında `messages` tablosunun etkin olduğunu doğrulayın.
 
 Migration; mevcut Auth kullanıcılarını `profiles` tablosuna aktarır, yeni kayıtlar için otomatik profil oluşturur ve tüm ürün tablolarında RLS politikalarını etkinleştirir.

@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Feedback, MarketplaceShell, SetupNotice } from '@/app/marketplace-shell'
-import { createPortfolioItem, deletePortfolioItem, updateProfile } from '@/lib/actions/marketplace'
+import { createPortfolioItem, deletePortfolioItem, deleteResume, updateProfile, uploadResume } from '@/lib/actions/marketplace'
 import { requireUser } from '@/lib/auth/role'
 
 export const dynamic = 'force-dynamic'
@@ -15,14 +15,18 @@ function isPortfolioImage(url: string | null) {
 export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ error?: string; message?: string }> }) {
   const params = await searchParams
   const { supabase, user, role, fullName } = await requireUser()
-  const [{ data: profile, error: profileError }, { data: reviews }, { data: portfolio }] = await Promise.all([
+  const [{ data: profile, error: profileError }, { data: reviews }, { data: portfolio }, { data: resumeProfile, error: resumeError }] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
     supabase.from('reviews').select('rating, comment, created_at, reviewer:profiles!reviews_reviewer_id_fkey(full_name)').eq('reviewee_id', user.id).order('created_at', { ascending: false }).limit(5),
     supabase.from('portfolio_items').select('*').eq('profile_id', user.id).order('created_at', { ascending: false }),
+    role === 'freelancer' ? supabase.from('profiles').select('resume_path').eq('id', user.id).maybeSingle() : Promise.resolve({ data: null, error: null }),
   ])
+  const { data: resumeLink } = resumeProfile?.resume_path
+    ? await supabase.storage.from('resumes').createSignedUrl(resumeProfile.resume_path, 60 * 60)
+    : { data: null }
   const average = reviews?.length ? (reviews.reduce((sum, review) => sum + Number(review.rating), 0) / reviews.length).toFixed(1) : null
   const completedFields = role === 'freelancer'
-    ? [profile?.full_name, profile?.title, profile?.bio, profile?.skills?.length, profile?.hourly_rate != null, profile?.experience_years != null, portfolio?.length]
+    ? [profile?.full_name, profile?.title, profile?.bio, profile?.skills?.length, profile?.hourly_rate != null, profile?.experience_years != null, portfolio?.length, resumeProfile?.resume_path]
     : [profile?.full_name, profile?.title, profile?.bio, profile?.company_name]
   const completion = Math.round((completedFields.filter(Boolean).length / completedFields.length) * 100)
 
@@ -31,6 +35,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       <div className="marketplace-page-head profile-manage-head"><div><p>HESAP & PORTFÖY</p><h1>Profilini tamamla.</h1><span>Doğru bilgiler, daha iyi eşleşmeler ve daha güçlü bir güven profili oluşturur.</span></div><div className="profile-head-actions"><Link href={`/profiles/${user.id}`}>Herkese açık profili gör →</Link><Link href={role === 'employer' ? '/employer' : '/freelancer'}>Panele dön →</Link></div></div>
       <Feedback {...params} />
       {profileError && <SetupNotice />}
+      {role === 'freelancer' && resumeError && <div className="error-message">Özgeçmiş alanının kullanılabilmesi için yeni Supabase migration dosyasını çalıştır.</div>}
       <div className="profile-layout">
         <form action={updateProfile} className="marketplace-form">
           <div className="form-section-title"><span>01</span><div><h2>Temel bilgiler</h2><p>Profilinde görünen kişisel veya şirket bilgilerin.</p></div></div>
@@ -57,6 +62,23 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           <div className="profile-review-list"><h3>Son değerlendirmeler</h3>{reviews?.length ? reviews.map((review, index) => <article key={index}><strong>{'★'.repeat(review.rating)}</strong><p>{review.comment || 'Yorum bırakılmadı.'}</p></article>) : <p>Henüz değerlendirme yok.</p>}</div>
         </aside>
       </div>
+
+      {role === 'freelancer' && <section className="resume-manager">
+        <div className="dashboard-section-title"><div><p>ÖZGEÇMİŞ</p><h2>Deneyimini tek dosyada paylaş</h2></div><span>{resumeProfile?.resume_path ? 'PDF yüklendi' : 'Henüz eklenmedi'}</span></div>
+        <div className="resume-manager-grid">
+          <article className={`resume-status-card ${resumeProfile?.resume_path ? 'ready' : ''}`}>
+            <div className="resume-document-icon">PDF</div>
+            <div><span>{resumeProfile?.resume_path ? 'ÖZGEÇMİŞ HAZIR' : 'ÖZGEÇMİŞ EKSİK'}</span><h3>{resumeProfile?.resume_path ? 'İşverenlerle paylaşılmaya hazır' : 'Profilini daha güçlü hale getir'}</h3><p>PDF dosyan özel olarak saklanır. Yalnızca sen ve giriş yapmış işverenler süreli bağlantıyla görüntüleyebilir.</p></div>
+            {resumeLink?.signedUrl && <a href={resumeLink.signedUrl} target="_blank" rel="noreferrer">Özgeçmişi görüntüle ↗</a>}
+            {resumeProfile?.resume_path && <details><summary>Özgeçmişi kaldır</summary><form action={deleteResume}><p>Dosya özel depolamadan kalıcı olarak silinecek.</p><button type="submit">Silme işlemini onayla</button></form></details>}
+          </article>
+          <form action={uploadResume} className="resume-upload-form" encType="multipart/form-data">
+            <span>{resumeProfile?.resume_path ? 'DOSYAYI DEĞİŞTİR' : 'DOSYA EKLE'}</span><h3>{resumeProfile?.resume_path ? 'Yeni özgeçmiş yükle' : 'Özgeçmişini yükle'}</h3><p>Güncel deneyim, eğitim ve iletişim bilgilerini içeren PDF dosyanı seç.</p>
+            <label>Özgeçmiş PDF’i<input name="resume" type="file" accept="application/pdf,.pdf" required /><small>Yalnızca PDF · En fazla 5 MB</small></label>
+            <button type="submit">{resumeProfile?.resume_path ? 'Özgeçmişi güncelle →' : 'Özgeçmişi ekle →'}</button>
+          </form>
+        </div>
+      </section>}
 
       {role === 'freelancer' && <section className="portfolio-manager">
         <div className="dashboard-section-title"><div><p>PORTFÖY VİTRİNİ</p><h2>Çalışmalarını sergile</h2></div><span>{portfolio?.length ?? 0} çalışma</span></div>
