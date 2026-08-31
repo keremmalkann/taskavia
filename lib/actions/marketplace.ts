@@ -106,10 +106,12 @@ export async function createProposal(jobId: string, formData: FormData) {
 export async function acceptProposal(jobId: string, proposalId: string) {
   const { supabase } = await requireRole('employer')
   const { error } = await supabase.rpc('accept_proposal', { target_proposal_id: proposalId })
-  if (error) go(`/jobs/${jobId}`, 'error', messageFromError(error, 'Teklif kabul edilemedi.'))
+  const comparisonPath = `/employer/jobs/${jobId}/proposals`
+  if (error) go(comparisonPath, 'error', messageFromError(error, 'Teklif kabul edilemedi.'))
   revalidatePath(`/jobs/${jobId}`)
+  revalidatePath(comparisonPath)
   revalidatePath('/employer')
-  go(`/jobs/${jobId}`, 'message', 'Teklif kabul edildi. Mesajlaşma artık açık.')
+  go(comparisonPath, 'message', 'Teklif kabul edildi. Mesajlaşma artık açık.')
 }
 
 export async function completeJob(jobId: string) {
