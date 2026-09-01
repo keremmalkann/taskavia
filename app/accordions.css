@@ -239,6 +239,16 @@
   line-height: 1.05;
 }
 
+.dashboard-category-links a.active {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #fff;
+}
+
+#opportunities {
+  scroll-margin-top: 90px;
+}
+
 @media (max-width: 700px) {
   .employer-project-table .project-table-head,
   .employer-project-table article {
