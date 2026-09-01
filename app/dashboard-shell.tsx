@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { signOut } from '@/lib/actions/auth'
+import { MessageShortcut } from '@/app/message-shortcut'
 import { NotificationMenu } from '@/app/notification-menu'
 import { ProtectedHistoryGuard } from '@/app/protected-history-guard'
 
@@ -41,7 +42,7 @@ export function DashboardShell({ name, roleLabel, navItems, action, children }: 
         <header className="dashboard-topbar">
           <div><span className="status-dot" /> Hesabın aktif</div>
           <div className="dashboard-top-actions">
-            <Link className="message-shortcut" href="/messages" aria-label="Mesajlara git" title="Mesajlar"><span aria-hidden="true">✉</span></Link>
+            <MessageShortcut />
             <NotificationMenu />
             {action}
           </div>

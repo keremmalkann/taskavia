@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { sendMessage } from '@/lib/actions/marketplace'
+import { MESSAGE_READ_EVENT } from '@/app/message-shortcut'
 
 type Message = { id: string; sender_id: string; body: string; created_at: string }
 
@@ -15,10 +16,27 @@ type MessageThreadProps = {
   initialMessages: Message[]
 }
 
+async function markConversationRead(proposalId: string) {
+  try {
+    const response = await fetch('/api/messages/read', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ proposalId }),
+    })
+    if (response.ok) window.dispatchEvent(new Event(MESSAGE_READ_EVENT))
+  } catch {
+    // Açık konuşmada bir sonraki mesaj veya sayfa odağı yeniden dener.
+  }
+}
+
 export function MessageThread({ proposalId, userId, currentUserName, counterpartName, jobTitle, initialMessages }: MessageThreadProps) {
   const [messages, setMessages] = useState(initialMessages)
   const messageListRef = useRef<HTMLDivElement>(null)
   const counterpartInitials = counterpartName.split(' ').slice(0, 2).map((part) => part[0]).join('').toLocaleUpperCase('tr-TR')
+
+  useEffect(() => {
+    void markConversationRead(proposalId)
+  }, [proposalId])
 
   useEffect(() => {
     const messageList = messageListRef.current
@@ -33,9 +51,10 @@ export function MessageThread({ proposalId, userId, currentUserName, counterpart
     }, (payload) => {
       const incoming = payload.new as Message
       setMessages((current) => current.some((message) => message.id === incoming.id) ? current : [...current, incoming])
+      if (incoming.sender_id !== userId) void markConversationRead(proposalId)
     }).subscribe()
     return () => { void supabase.removeChannel(channel) }
-  }, [proposalId])
+  }, [proposalId, userId])
 
   return <div className="message-thread">
     <header className="conversation-toolbar">

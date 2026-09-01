@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { MarketplaceShell, SetupNotice } from '@/app/marketplace-shell'
 import { requireUser } from '@/lib/auth/role'
+import { getMessageReads, isMessageUnread } from '@/lib/message-reads'
 import { formatNotificationTime } from '@/lib/notifications'
 
 export const dynamic = 'force-dynamic'
@@ -38,8 +39,13 @@ export default async function MessagesPage() {
   }
 
   const latestByProposal = new Map<string, RecentMessage>()
+  const unreadByProposal = new Map<string, number>()
+  const messageReads = getMessageReads(user.user_metadata)
   for (const message of recentMessages) {
     if (!latestByProposal.has(message.proposal_id)) latestByProposal.set(message.proposal_id, message)
+    if (message.sender_id !== user.id && isMessageUnread(messageReads, message.proposal_id, message.created_at)) {
+      unreadByProposal.set(message.proposal_id, (unreadByProposal.get(message.proposal_id) ?? 0) + 1)
+    }
   }
 
   return <MarketplaceShell name={fullName} role={role} active="messages">
@@ -55,12 +61,13 @@ export default async function MessagesPage() {
         const latest = latestByProposal.get(conversation.id)
         const preview = latest ? `${latest.sender_id === user.id ? 'Sen: ' : ''}${latest.body}` : 'Henüz mesaj yok. İlk mesajı gönder.'
         const updatedAt = latest?.created_at || conversation.updated_at
+        const unreadCount = unreadByProposal.get(conversation.id) ?? 0
         const initials = counterpart.split(' ').slice(0, 2).map((part) => part[0]).join('').toLocaleUpperCase('tr-TR')
 
         return <Link className="conversation-card" href={`/messages/${conversation.id}`} key={conversation.id}>
           <span className="conversation-avatar" aria-hidden="true">{initials}</span>
           <span className="conversation-copy"><strong>{counterpart}</strong><small>{job?.title || 'Aktif proje'}</small><em>{preview}</em></span>
-          <span className="conversation-meta"><time>{formatNotificationTime(updatedAt)}</time><b aria-hidden="true">→</b></span>
+          <span className="conversation-meta"><time>{formatNotificationTime(updatedAt)}</time>{unreadCount > 0 && <strong aria-label={`${unreadCount} okunmamış mesaj`}>{Math.min(unreadCount, 99)}{unreadCount > 99 ? '+' : ''}</strong>}<b aria-hidden="true">→</b></span>
         </Link>
       })}
     </section> : <div className="marketplace-empty"><strong>Henüz aktif konuşman yok</strong><p>Bir teklif kabul edildiğinde proje konuşman burada görünecek.</p></div>}
