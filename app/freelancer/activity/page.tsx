@@ -39,10 +39,12 @@ export default async function FreelancerActivityPage({ searchParams }: { searchP
   ])
   const proposals = (proposalData ?? []) as unknown as Proposal[]
   const payments = (paymentData ?? []) as unknown as Payment[]
-  const visibleProposals = view === 'jobs' ? proposals.filter((proposal) => proposal.status === 'accepted') : proposals.filter((proposal) => proposal.status === 'pending')
+  const visibleProposals = view === 'jobs'
+    ? proposals.filter((proposal) => proposal.status === 'accepted' && one(proposal.job)?.status === 'assigned')
+    : proposals.filter((proposal) => proposal.status === 'pending')
   const visiblePayments = payments.filter((payment) => payment.status === 'released')
   const title = view === 'proposals' ? 'Aktif tekliflerim' : view === 'earnings' ? 'Kazançlarım' : 'Devam eden işlerim'
-  const description = view === 'proposals' ? 'İşverenlerin değerlendirmesini bekleyen tekliflerini takip et.' : view === 'earnings' ? 'Tamamlanan ödemeleri ve net kazancını görüntüle.' : 'Kabul edilen projelerine ve çalışma alanlarına ulaş.'
+  const description = view === 'proposals' ? 'İşverenlerin değerlendirmesini bekleyen tekliflerini takip et.' : view === 'earnings' ? 'Tamamlanan ödemeleri ve net kazancını görüntüle.' : 'Kabul edilen ve çalışması devam eden projelerine ulaş.'
 
   return <MarketplaceShell name={fullName} role="freelancer" active="dashboard">
     <div className="workspace-head activity-head"><div><p>ÇALIŞMALARIM</p><h1>{title}</h1><span>{description}</span></div><Link href="/freelancer">← Genel bakışa dön</Link></div>
@@ -65,7 +67,7 @@ export default async function FreelancerActivityPage({ searchParams }: { searchP
         const employer = one(job?.employer)
         return <article className="activity-card" key={proposal.id}><div><span>{view === 'jobs' ? 'DEVAM EDEN PROJE' : 'AKTİF TEKLİF'}</span><h2>{job?.title || 'Proje'}</h2><p>{employer?.company_name || employer?.full_name || 'İşlik işvereni'} · {proposalStatus(proposal.status)}</p></div><div className="activity-numbers"><small>TEKLİFİN</small><strong>{formatCurrency(proposal.price)}</strong><em>{proposal.duration_days} gün</em></div><div className="activity-actions"><Link href={`/jobs/${job?.id}`}>İlanı görüntüle</Link>{proposal.status === 'accepted' && <Link className="primary" href={`/messages/${proposal.id}`}>Çalışma alanına git →</Link>}</div></article>
       })}
-      {visibleProposals.length === 0 && <div className="marketplace-empty"><strong>{view === 'jobs' ? 'Devam eden işin yok' : 'Bekleyen teklifin yok'}</strong><p>{view === 'jobs' ? 'Bir teklifin kabul edildiğinde proje burada görünecek.' : 'Yeni bir ilana teklif verdiğinde değerlendirme sürecini burada izleyebilirsin.'}</p></div>}
+      {visibleProposals.length === 0 && <div className="marketplace-empty"><strong>{view === 'jobs' ? 'Devam eden işin yok' : 'Bekleyen teklifin yok'}</strong><p>{view === 'jobs' ? 'Kabul edilen bir proje çalışma durumundayken burada görünecek; tamamlandığında listeden kalkacak.' : 'Yeni bir ilana teklif verdiğinde değerlendirme sürecini burada izleyebilirsin.'}</p></div>}
     </section>}
   </MarketplaceShell>
 }

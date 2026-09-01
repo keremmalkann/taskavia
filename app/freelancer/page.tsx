@@ -12,10 +12,13 @@ export default async function FreelancerPage() {
   const { supabase, user, fullName } = await requireRole('freelancer')
   const [{ data: jobs, error: jobsError }, { data: proposals }, { data: payments }] = await Promise.all([
     supabase.from('jobs').select('*, employer:profiles!jobs_employer_id_fkey(full_name, company_name)').eq('status', 'open').order('created_at', { ascending: false }).limit(3),
-    supabase.from('proposals').select('id, status, job_id, price').eq('freelancer_id', user.id),
+    supabase.from('proposals').select('id, status, job_id, price, job:jobs!inner(status)').eq('freelancer_id', user.id),
     supabase.from('payments').select('amount, platform_fee, status').eq('freelancer_id', user.id),
   ])
-  const active = proposals?.filter((proposal) => proposal.status === 'accepted').length ?? 0
+  const active = proposals?.filter((proposal) => {
+    const job = Array.isArray(proposal.job) ? proposal.job[0] : proposal.job
+    return proposal.status === 'accepted' && job?.status === 'assigned'
+  }).length ?? 0
   const pending = proposals?.filter((proposal) => proposal.status === 'pending').length ?? 0
   const earnings = payments?.filter((payment) => payment.status === 'released').reduce((sum, payment) => sum + Number(payment.amount) - Number(payment.platform_fee), 0) ?? 0
 
