@@ -16,12 +16,19 @@ function Toggle({ name, title, description, defaultChecked }: { name: string; ti
   return <label className="settings-toggle"><span><strong>{title}</strong><small>{description}</small></span><input name={name} type="checkbox" defaultChecked={defaultChecked} /><i aria-hidden="true" /></label>
 }
 
+function AccordionSummary({ number, title, description, status }: { number: string; title: string; description: string; status: string }) {
+  return <summary className="settings-accordion-summary"><span className="settings-accordion-number">{number}</span><div><h2>{title}</h2><p>{description}</p></div><strong>{status}</strong><i aria-hidden="true">⌄</i></summary>
+}
+
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ error?: string; message?: string }> }) {
   const params = await searchParams
   const { user, role, fullName } = await requireUser()
   const settings = (user.user_metadata.settings ?? {}) as Settings
   const notifications = settings.notifications ?? {}
   const privacy = settings.privacy ?? {}
+  const notificationValues = [notifications.messages ?? true, notifications.project_updates ?? true, notifications.opportunities ?? true, notifications.weekly_digest ?? true, notifications.marketing ?? false]
+  const enabledNotificationCount = notificationValues.filter(Boolean).length
+  const privacyStatus = privacy.profile_visibility === 'members' ? 'Yalnızca üyeler' : 'Herkese açık'
   const joinedAt = new Intl.DateTimeFormat('tr-TR', { month: 'long', year: 'numeric', timeZone: 'Europe/Istanbul' }).format(new Date(user.created_at))
 
   return <MarketplaceShell name={fullName} role={role} active="settings">
@@ -29,26 +36,33 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
     <Feedback {...params} />
     <div className="settings-layout">
       <div className="settings-main">
-        <form action={updateSettings} className="settings-card">
-          <div className="settings-card-head"><span>01</span><div><h2>Bildirimler</h2><p>İşlik’ten hangi gelişmeler için haber almak istediğini seç.</p></div></div>
-          <div className="settings-options">
-            <Toggle name="notifyMessages" title="Yeni mesajlar" description="Bir işveren veya freelancer sana mesaj gönderdiğinde haber ver." defaultChecked={notifications.messages ?? true} />
-            <Toggle name="notifyProjectUpdates" title="Proje ve teklif güncellemeleri" description={role === 'employer' ? 'İlanlarına yeni teklif geldiğinde ve iş durumu değiştiğinde bildir.' : 'Tekliflerin kabul edildiğinde veya iş durumu değiştiğinde bildir.'} defaultChecked={notifications.project_updates ?? true} />
-            <Toggle name="notifyOpportunities" title={role === 'employer' ? 'Yetenek önerileri' : 'Yeni iş fırsatları'} description={role === 'employer' ? 'İlanlarınla eşleşen freelancer önerilerini al.' : 'Yeteneklerinle eşleşen yeni ilanlardan haberdar ol.'} defaultChecked={notifications.opportunities ?? true} />
-            <Toggle name="notifyWeeklyDigest" title="Haftalık özet" description="Haftanın fırsatlarını ve hesap hareketlerini tek e-postada al." defaultChecked={notifications.weekly_digest ?? true} />
-            <Toggle name="notifyMarketing" title="Ürün haberleri" description="Yeni özellikler, etkinlikler ve İşlik duyurularını al." defaultChecked={notifications.marketing ?? false} />
-          </div>
+        <form action={updateSettings} className="settings-card settings-preferences-card">
+          <div className="settings-preferences-intro"><span>TERCİHLER</span><h2>Hesabını kendine göre düzenle.</h2><p>Başlıklara dokunarak ayrıntıları açabilir, seçimlerini tek seferde kaydedebilirsin.</p></div>
 
-          <div className="settings-card-head settings-card-section"><span>02</span><div><h2>Gizlilik</h2><p>Diğer kullanıcıların profilinde neleri görebileceğini belirle.</p></div></div>
-          <label className="settings-select">Profil görünürlüğü<select name="profileVisibility" defaultValue={privacy.profile_visibility ?? 'public'}><option value="public">Herkese açık</option><option value="members">Yalnızca İşlik üyeleri</option></select><small>Profilin arama ve freelancer listelerinde kimlere gösterilsin?</small></label>
-          <div className="settings-options">
-            <Toggle name="showActivity" title="Aktiflik durumunu göster" description="Yakın zamanda aktif olduğunu diğer İşlik üyeleri görebilsin." defaultChecked={privacy.show_activity ?? true} />
-            <Toggle name="showCompletedJobs" title="Tamamlanan işleri göster" description="Tamamlanan proje sayın güven profiline dahil edilsin." defaultChecked={privacy.show_completed_jobs ?? true} />
-          </div>
+          <details className="settings-accordion">
+            <AccordionSummary number="01" title="Bildirimler" description="Mesaj, proje ve fırsat haberlerini yönet." status={`${enabledNotificationCount}/5 açık`} />
+            <div className="settings-accordion-body"><div className="settings-options">
+              <Toggle name="notifyMessages" title="Yeni mesajlar" description="Bir işveren veya freelancer sana mesaj gönderdiğinde haber ver." defaultChecked={notifications.messages ?? true} />
+              <Toggle name="notifyProjectUpdates" title="Proje ve teklif güncellemeleri" description={role === 'employer' ? 'İlanlarına yeni teklif geldiğinde ve iş durumu değiştiğinde bildir.' : 'Tekliflerin kabul edildiğinde veya iş durumu değiştiğinde bildir.'} defaultChecked={notifications.project_updates ?? true} />
+              <Toggle name="notifyOpportunities" title={role === 'employer' ? 'Yetenek önerileri' : 'Yeni iş fırsatları'} description={role === 'employer' ? 'İlanlarınla eşleşen freelancer önerilerini al.' : 'Yeteneklerinle eşleşen yeni ilanlardan haberdar ol.'} defaultChecked={notifications.opportunities ?? true} />
+              <Toggle name="notifyWeeklyDigest" title="Haftalık özet" description="Haftanın fırsatlarını ve hesap hareketlerini tek e-postada al." defaultChecked={notifications.weekly_digest ?? true} />
+              <Toggle name="notifyMarketing" title="Ürün haberleri" description="Yeni özellikler, etkinlikler ve İşlik duyurularını al." defaultChecked={notifications.marketing ?? false} />
+            </div></div>
+          </details>
 
-          <div className="settings-card-head settings-card-section"><span>03</span><div><h2>Dil & bölge</h2><p>İşlik hesabının yerel gösterim tercihleri.</p></div></div>
-          <div className="settings-region-grid"><div><small>DİL</small><strong>Türkçe</strong></div><div><small>PARA BİRİMİ</small><strong>Türk Lirası (₺)</strong></div><div><small>SAAT DİLİMİ</small><strong>İstanbul</strong></div></div>
-          <button className="marketplace-submit settings-save" type="submit">Ayarları kaydet →</button>
+          <details className="settings-accordion">
+            <AccordionSummary number="02" title="Gizlilik" description="Profilinin görünürlüğünü ve hareketlerini belirle." status={privacyStatus} />
+            <div className="settings-accordion-body">
+              <label className="settings-select">Profil görünürlüğü<select name="profileVisibility" defaultValue={privacy.profile_visibility ?? 'public'}><option value="public">Herkese açık</option><option value="members">Yalnızca İşlik üyeleri</option></select><small>Profilin arama ve freelancer listelerinde kimlere gösterilsin?</small></label>
+              <div className="settings-options">
+                <Toggle name="showActivity" title="Aktiflik durumunu göster" description="Yakın zamanda aktif olduğunu diğer İşlik üyeleri görebilsin." defaultChecked={privacy.show_activity ?? true} />
+                <Toggle name="showCompletedJobs" title="Tamamlanan işleri göster" description="Tamamlanan proje sayın güven profiline dahil edilsin." defaultChecked={privacy.show_completed_jobs ?? true} />
+              </div>
+            </div>
+          </details>
+
+          <section className="settings-locale-row"><div><span className="settings-accordion-number">03</span><div><h2>Dil & bölge</h2><p>Yerel gösterim tercihlerin otomatik olarak ayarlandı.</p></div></div><div className="settings-region-grid"><div><small>DİL</small><strong>Türkçe</strong></div><div><small>PARA BİRİMİ</small><strong>Türk Lirası (₺)</strong></div><div><small>SAAT DİLİMİ</small><strong>İstanbul</strong></div></div></section>
+          <button className="marketplace-submit settings-save" type="submit">Değişiklikleri kaydet →</button>
         </form>
 
         <section className="settings-card">
@@ -59,9 +73,10 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       </div>
 
       <aside className="settings-account-card">
-        <span className="profile-preview-label">HESAP ÖZETİ</span>
+        <div className="settings-account-top"><span className="profile-preview-label">HESAP ÖZETİ</span><strong>AKTİF</strong></div>
         <div className="settings-account-avatar">{fullName.slice(0, 2).toLocaleUpperCase('tr-TR')}</div>
         <h2>{fullName}</h2><p>{role === 'employer' ? 'İşveren hesabı' : 'Freelancer hesabı'}</p>
+        <div className="settings-account-tags"><span>{role === 'employer' ? 'İşveren' : 'Freelancer'}</span><span>{user.email_confirmed_at ? 'E-posta doğrulandı' : 'Doğrulama bekliyor'}</span></div>
         <dl><div><dt>E-posta</dt><dd>{user.email}</dd></div><div><dt>E-posta durumu</dt><dd className={user.email_confirmed_at ? 'verified' : ''}>{user.email_confirmed_at ? 'Doğrulandı' : 'Doğrulanmadı'}</dd></div><div><dt>Üyelik</dt><dd>{joinedAt}</dd></div></dl>
         <Link href="/profile">Profil bilgilerini düzenle →</Link>
       </aside>
