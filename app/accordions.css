@@ -233,6 +233,12 @@
   white-space: nowrap;
 }
 
+.project-completion-panel h2 {
+  max-width: 300px;
+  font-size: 31px;
+  line-height: 1.05;
+}
+
 @media (max-width: 700px) {
   .employer-project-table .project-table-head,
   .employer-project-table article {
