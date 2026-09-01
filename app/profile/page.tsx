@@ -12,6 +12,10 @@ function isPortfolioImage(url: string | null) {
   return Boolean(url && /\.(?:jpe?g|png|webp)(?:\?|$)/i.test(url))
 }
 
+function ProfileAccordionSummary({ number, title, description, status }: { number: string; title: string; description: string; status: string }) {
+  return <summary className="profile-accordion-summary"><span>{number}</span><div><h2>{title}</h2><p>{description}</p></div><strong>{status}</strong><i aria-hidden="true">⌄</i></summary>
+}
+
 export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ error?: string; message?: string }> }) {
   const params = await searchParams
   const { supabase, user, role, fullName } = await requireUser()
@@ -37,19 +41,27 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       {profileError && <SetupNotice />}
       {role === 'freelancer' && resumeError && <div className="error-message">Özgeçmiş alanının kullanılabilmesi için yeni Supabase migration dosyasını çalıştır.</div>}
       <div className="profile-layout">
-        <form action={updateProfile} className="marketplace-form">
-          <div className="form-section-title"><span>01</span><div><h2>Temel bilgiler</h2><p>Profilinde görünen kişisel veya şirket bilgilerin.</p></div></div>
-          <div className="form-grid two"><label>Ad Soyad<input name="fullName" required minLength={2} defaultValue={profile?.full_name ?? fullName} /></label><label>{role === 'employer' ? 'Pozisyon' : 'Uzmanlık başlığı'}<input name="title" defaultValue={profile?.title ?? ''} placeholder={role === 'employer' ? 'Kurucu, İnsan Kaynakları…' : 'Product Designer, Frontend Developer…'} /></label></div>
-          {role === 'employer' && <label>Şirket adı<input name="companyName" defaultValue={profile?.company_name ?? ''} placeholder="Şirket veya marka adı" /></label>}
-          <label>Hakkında<textarea name="bio" rows={5} maxLength={1500} defaultValue={profile?.bio ?? ''} placeholder="Deneyimini, çalışma biçimini ve hedeflerini anlat." /></label>
+        <form action={updateProfile} className="marketplace-form profile-accordion-form">
+          <div className="profile-form-intro"><span>PROFİL BİLGİLERİ</span><h2>Kendini doğru bilgilerle anlat.</h2><p>Düzenlemek istediğin başlığı aç; diğer bölümler çalışma alanını sade tutmak için kapalı kalır.</p></div>
+          <details className="profile-accordion">
+            <ProfileAccordionSummary number="01" title="Temel bilgiler" description="Profilinde görünen kişisel veya şirket bilgilerin." status={profile?.bio ? 'Dolu' : 'Eksik bilgi var'} />
+            <div className="profile-accordion-body">
+              <div className="form-grid two"><label>Ad Soyad<input name="fullName" required minLength={2} defaultValue={profile?.full_name ?? fullName} /></label><label>{role === 'employer' ? 'Pozisyon' : 'Uzmanlık başlığı'}<input name="title" defaultValue={profile?.title ?? ''} placeholder={role === 'employer' ? 'Kurucu, İnsan Kaynakları…' : 'Product Designer, Frontend Developer…'} /></label></div>
+              {role === 'employer' && <label>Şirket adı<input name="companyName" defaultValue={profile?.company_name ?? ''} placeholder="Şirket veya marka adı" /></label>}
+              <label>Hakkında<textarea name="bio" rows={5} maxLength={1500} defaultValue={profile?.bio ?? ''} placeholder="Deneyimini, çalışma biçimini ve hedeflerini anlat." /></label>
+            </div>
+          </details>
           {role === 'freelancer' && <>
-            <div className="form-section-title"><span>02</span><div><h2>Uzmanlık & ücret</h2><p>İşverenlerin seni doğru projelerle eşleştirmesini sağlar.</p></div></div>
-            <label>Yetenekler<input name="skills" defaultValue={profile?.skills?.join(', ') ?? ''} placeholder="Figma, React, Marka Stratejisi (virgülle ayır)" /></label>
-            <div className="form-grid two"><label>Saatlik ücret (₺)<input name="hourlyRate" type="number" min="0" step="1" defaultValue={profile?.hourly_rate ?? ''} /></label><label>Deneyim (yıl)<input name="experienceYears" type="number" min="0" step="1" defaultValue={profile?.experience_years ?? ''} /></label></div>
-            <div className="form-section-title"><span>03</span><div><h2>Ödeme bilgisi</h2><p>Kabul edilen işler için ödeme hesabını bağla.</p></div></div>
-            <label>Stripe Connect hesap kimliği<input name="stripeAccountId" defaultValue={profile?.stripe_account_id ?? ''} placeholder="acct_..." /></label>
+            <details className="profile-accordion">
+              <ProfileAccordionSummary number="02" title="Uzmanlık & ücret" description="İşverenlerin seni doğru projelerle eşleştirmesini sağlar." status={`${profile?.skills?.length ?? 0} yetenek`} />
+              <div className="profile-accordion-body"><label>Yetenekler<input name="skills" defaultValue={profile?.skills?.join(', ') ?? ''} placeholder="Figma, React, Marka Stratejisi (virgülle ayır)" /></label><div className="form-grid two"><label>Saatlik ücret (₺)<input name="hourlyRate" type="number" min="0" step="1" defaultValue={profile?.hourly_rate ?? ''} /></label><label>Deneyim (yıl)<input name="experienceYears" type="number" min="0" step="1" defaultValue={profile?.experience_years ?? ''} /></label></div></div>
+            </details>
+            <details className="profile-accordion">
+              <ProfileAccordionSummary number="03" title="Ödeme bilgisi" description="Kabul edilen işler için ödeme hesabını bağla." status={profile?.stripe_account_id ? 'Bağlı' : 'Bağlı değil'} />
+              <div className="profile-accordion-body"><label>Stripe Connect hesap kimliği<input name="stripeAccountId" defaultValue={profile?.stripe_account_id ?? ''} placeholder="acct_..." /></label></div>
+            </details>
           </>}
-          <button className="marketplace-submit" type="submit">Profili kaydet →</button>
+          <button className="marketplace-submit profile-save" type="submit">Profili kaydet →</button>
         </form>
         <aside className="profile-preview">
           <div className="profile-preview-top"><span className="profile-preview-label">PROFİL ÖNİZLEMESİ</span><strong>{completion}% tamamlandı</strong></div>
@@ -63,9 +75,9 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         </aside>
       </div>
 
-      {role === 'freelancer' && <section className="resume-manager">
-        <div className="dashboard-section-title"><div><p>ÖZGEÇMİŞ</p><h2>Deneyimini tek dosyada paylaş</h2></div><span>{resumeProfile?.resume_path ? 'PDF yüklendi' : 'Henüz eklenmedi'}</span></div>
-        <div className="resume-manager-grid">
+      {role === 'freelancer' && <details className="profile-manager-accordion resume-manager">
+        <ProfileAccordionSummary number="04" title="Özgeçmiş" description="Deneyimini tek dosyada paylaş ve güncel tut." status={resumeProfile?.resume_path ? 'PDF yüklendi' : 'Henüz eklenmedi'} />
+        <div className="profile-manager-accordion-body"><div className="resume-manager-grid">
           <article className={`resume-status-card ${resumeProfile?.resume_path ? 'ready' : ''}`}>
             <div className="resume-document-icon">PDF</div>
             <div><span>{resumeProfile?.resume_path ? 'ÖZGEÇMİŞ HAZIR' : 'ÖZGEÇMİŞ EKSİK'}</span><h3>{resumeProfile?.resume_path ? 'İşverenlerle paylaşılmaya hazır' : 'Profilini daha güçlü hale getir'}</h3><p>PDF dosyan özel olarak saklanır. Yalnızca sen ve giriş yapmış işverenler süreli bağlantıyla görüntüleyebilir.</p></div>
@@ -77,12 +89,12 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
             <label>Özgeçmiş PDF’i<input name="resume" type="file" accept="application/pdf,.pdf" required /><small>Yalnızca PDF · En fazla 5 MB</small></label>
             <button type="submit">{resumeProfile?.resume_path ? 'Özgeçmişi güncelle →' : 'Özgeçmişi ekle →'}</button>
           </form>
-        </div>
-      </section>}
+        </div></div>
+      </details>}
 
-      {role === 'freelancer' && <section className="portfolio-manager">
-        <div className="dashboard-section-title"><div><p>PORTFÖY VİTRİNİ</p><h2>Çalışmalarını sergile</h2></div><span>{portfolio?.length ?? 0} çalışma</span></div>
-        <div className="portfolio-manager-layout">
+      {role === 'freelancer' && <details className="profile-manager-accordion portfolio-manager">
+        <ProfileAccordionSummary number="05" title="Portföy vitrini" description="En iyi çalışmalarını ekle ve sergile." status={`${portfolio?.length ?? 0} çalışma`} />
+        <div className="profile-manager-accordion-body"><div className="portfolio-manager-layout">
           <form action={createPortfolioItem} className="portfolio-upload-form" encType="multipart/form-data">
             <span>YENİ ÇALIŞMA</span>
             <h3>Portföye ekle</h3>
@@ -100,8 +112,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
             </article>)}
             {portfolio?.length === 0 && <div className="marketplace-empty portfolio-manager-empty"><strong>Vitrinin henüz boş.</strong><p>İşverenlerin yeteneğini görebilmesi için ilk çalışmanı ekle.</p></div>}
           </div>
-        </div>
-      </section>}
+        </div></div>
+      </details>}
     </MarketplaceShell>
   )
 }
