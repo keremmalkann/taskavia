@@ -61,15 +61,20 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             </div>
           </details>
 
-          <section className="settings-locale-row"><div><span className="settings-accordion-number">03</span><div><h2>Dil & bölge</h2><p>Yerel gösterim tercihlerin otomatik olarak ayarlandı.</p></div></div><div className="settings-region-grid"><div><small>DİL</small><strong>Türkçe</strong></div><div><small>PARA BİRİMİ</small><strong>Türk Lirası (₺)</strong></div><div><small>SAAT DİLİMİ</small><strong>İstanbul</strong></div></div></section>
+          <details className="settings-accordion">
+            <AccordionSummary number="03" title="Dil & bölge" description="Dil, para birimi ve saat dilimi tercihlerini gör." status="Türkçe · ₺" />
+            <div className="settings-accordion-body settings-locale-body"><div className="settings-region-grid"><div><small>DİL</small><strong>Türkçe</strong></div><div><small>PARA BİRİMİ</small><strong>Türk Lirası (₺)</strong></div><div><small>SAAT DİLİMİ</small><strong>İstanbul</strong></div></div></div>
+          </details>
           <button className="marketplace-submit settings-save" type="submit">Değişiklikleri kaydet →</button>
         </form>
 
-        <section className="settings-card">
-          <div className="settings-card-head"><span>04</span><div><h2>Güvenlik</h2><p>Şifreni yenile ve açık oturumlarını kontrol et.</p></div></div>
-          <form action={changePassword} className="settings-password-form"><label>Yeni şifre<input name="password" type="password" minLength={8} autoComplete="new-password" required placeholder="En az 8 karakter" /></label><label>Yeni şifre tekrar<input name="passwordConfirmation" type="password" minLength={8} autoComplete="new-password" required placeholder="Şifreni tekrar yaz" /></label><button type="submit">Şifreyi değiştir</button></form>
-          <div className="settings-session"><div><strong>Tüm cihazlardaki oturumlar</strong><small>Hesabının açık olduğu diğer cihazlardan güvenli şekilde çıkış yap.</small></div><form action={signOutEverywhere}><button type="submit">Tüm oturumları kapat</button></form></div>
-        </section>
+        <details className="settings-card settings-accordion settings-security-card">
+          <AccordionSummary number="04" title="Güvenlik" description="Şifreni yenile ve açık oturumlarını kontrol et." status="Şifre & oturum" />
+          <div className="settings-accordion-body settings-security-body">
+            <form action={changePassword} className="settings-password-form"><label>Yeni şifre<input name="password" type="password" minLength={8} autoComplete="new-password" required placeholder="En az 8 karakter" /></label><label>Yeni şifre tekrar<input name="passwordConfirmation" type="password" minLength={8} autoComplete="new-password" required placeholder="Şifreni tekrar yaz" /></label><button type="submit">Şifreyi değiştir</button></form>
+            <div className="settings-session"><div><strong>Tüm cihazlardaki oturumlar</strong><small>Hesabının açık olduğu diğer cihazlardan güvenli şekilde çıkış yap.</small></div><form action={signOutEverywhere}><button type="submit">Tüm oturumları kapat</button></form></div>
+          </div>
+        </details>
       </div>
 
       <aside className="settings-account-card">
