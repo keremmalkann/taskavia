@@ -249,6 +249,113 @@
   scroll-margin-top: 90px;
 }
 
+.activity-tabs {
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  border: 0;
+  background: transparent;
+}
+
+.activity-tabs a {
+  position: relative;
+  min-height: 88px;
+  padding: 16px 18px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  place-items: initial;
+  align-items: center;
+  gap: 13px;
+  border: 1px solid var(--line);
+  background: var(--cream);
+  color: var(--ink);
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+.activity-tabs a:hover {
+  transform: translateY(-2px);
+  border-color: var(--ink);
+  box-shadow: 0 9px 22px rgba(23, 33, 31, .08);
+}
+
+.activity-tabs a.active {
+  background: var(--ink);
+  color: #fff;
+  box-shadow: inset 0 -4px var(--acid);
+}
+
+.activity-tab-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #ebe8df;
+  color: var(--ink);
+  font-family: var(--font-serif), serif;
+  font-size: 17px;
+}
+
+.activity-tabs a.active .activity-tab-icon {
+  background: var(--acid);
+}
+
+.activity-tab-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.activity-tab-copy strong {
+  font-size: 10px;
+}
+
+.activity-tab-copy small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 7px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-tabs a.active .activity-tab-copy small {
+  color: #9da8a4;
+}
+
+.activity-tabs a > em {
+  min-width: 25px;
+  height: 25px;
+  padding: 0 7px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: #ebe8df;
+  color: var(--ink);
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.activity-tabs a.active > em {
+  background: #34413e;
+  color: var(--acid);
+}
+
+@media (max-width: 800px) {
+  .activity-tabs {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 6px;
+  }
+
+  .activity-tabs a {
+    min-width: 245px;
+  }
+}
+
 @media (max-width: 700px) {
   .employer-project-table .project-table-head,
   .employer-project-table article {

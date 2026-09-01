@@ -39,9 +39,9 @@ export default async function FreelancerActivityPage({ searchParams }: { searchP
   ])
   const proposals = (proposalData ?? []) as unknown as Proposal[]
   const payments = (paymentData ?? []) as unknown as Payment[]
-  const visibleProposals = view === 'jobs'
-    ? proposals.filter((proposal) => proposal.status === 'accepted' && one(proposal.job)?.status === 'assigned')
-    : proposals.filter((proposal) => proposal.status === 'pending')
+  const pendingProposals = proposals.filter((proposal) => proposal.status === 'pending')
+  const ongoingProposals = proposals.filter((proposal) => proposal.status === 'accepted' && one(proposal.job)?.status === 'assigned')
+  const visibleProposals = view === 'jobs' ? ongoingProposals : pendingProposals
   const visiblePayments = payments.filter((payment) => payment.status === 'released')
   const title = view === 'proposals' ? 'Aktif tekliflerim' : view === 'earnings' ? 'Kazançlarım' : 'Devam eden işlerim'
   const description = view === 'proposals' ? 'İşverenlerin değerlendirmesini bekleyen tekliflerini takip et.' : view === 'earnings' ? 'Tamamlanan ödemeleri ve net kazancını görüntüle.' : 'Kabul edilen ve çalışması devam eden projelerine ulaş.'
@@ -49,9 +49,9 @@ export default async function FreelancerActivityPage({ searchParams }: { searchP
   return <MarketplaceShell name={fullName} role="freelancer" active="dashboard">
     <div className="workspace-head activity-head"><div><p>ÇALIŞMALARIM</p><h1>{title}</h1><span>{description}</span></div><Link href="/freelancer">← Genel bakışa dön</Link></div>
     <nav className="activity-tabs" aria-label="Çalışma detayları">
-      <Link className={view === 'proposals' ? 'active' : ''} href="/freelancer/activity?view=proposals">Aktif teklifler</Link>
-      <Link className={view === 'jobs' ? 'active' : ''} href="/freelancer/activity?view=jobs">Devam eden işler</Link>
-      <Link className={view === 'earnings' ? 'active' : ''} href="/freelancer/activity?view=earnings">Kazançlar</Link>
+      <Link className={view === 'proposals' ? 'active' : ''} aria-current={view === 'proposals' ? 'page' : undefined} href="/freelancer/activity?view=proposals"><span className="activity-tab-icon" aria-hidden="true">↗</span><span className="activity-tab-copy"><strong>Aktif teklifler</strong><small>Yanıt bekleyen başvurular</small></span><em>{pendingProposals.length}</em></Link>
+      <Link className={view === 'jobs' ? 'active' : ''} aria-current={view === 'jobs' ? 'page' : undefined} href="/freelancer/activity?view=jobs"><span className="activity-tab-icon" aria-hidden="true">◇</span><span className="activity-tab-copy"><strong>Devam eden işler</strong><small>Çalışma alanların</small></span><em>{ongoingProposals.length}</em></Link>
+      <Link className={view === 'earnings' ? 'active' : ''} aria-current={view === 'earnings' ? 'page' : undefined} href="/freelancer/activity?view=earnings"><span className="activity-tab-icon" aria-hidden="true">₺</span><span className="activity-tab-copy"><strong>Kazançlar</strong><small>Tamamlanan ödemeler</small></span><em>{visiblePayments.length}</em></Link>
     </nav>
     {(proposalError || paymentError) ? <SetupNotice /> : view === 'earnings' ? <section className="activity-list">
       {visiblePayments.map((payment) => {
