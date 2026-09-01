@@ -1,5 +1,6 @@
 import { requireUser, type UserRole } from '@/lib/auth/role'
 import { formatCurrency } from '@/lib/marketplace'
+import { getMessageReads, isMessageUnread } from '@/lib/message-reads'
 
 export type NotificationItem = {
   id: string
@@ -136,13 +137,21 @@ export async function getNotifications(limit = 20): Promise<NotificationFeed> {
 
   const lastSeen = String(user.user_metadata.notifications_last_seen_at ?? '')
   const lastSeenTime = lastSeen ? new Date(lastSeen).getTime() : 0
+  const messageReads = getMessageReads(user.user_metadata)
+  const unread = (item: Omit<NotificationItem, 'unread'>) => {
+    if (item.kind === 'message') {
+      const proposalId = item.href.split('/').filter(Boolean).at(-1) ?? ''
+      return isMessageUnread(messageReads, proposalId, item.createdAt)
+    }
+    return new Date(item.createdAt).getTime() > lastSeenTime
+  }
   const sorted = items
     .filter((item) => item.createdAt)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-  const unreadCount = sorted.filter((item) => new Date(item.createdAt).getTime() > lastSeenTime).length
+  const unreadCount = sorted.filter(unread).length
 
   return {
-    items: sorted.slice(0, limit).map((item) => ({ ...item, unread: new Date(item.createdAt).getTime() > lastSeenTime })),
+    items: sorted.slice(0, limit).map((item) => ({ ...item, unread: unread(item) })),
     unreadCount,
   }
 }

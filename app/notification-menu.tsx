@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { markNotificationsRead } from '@/lib/actions/notifications'
 
 type NotificationItem = { id: string; kind: 'message' | 'proposal' | 'payment'; title: string; body: string; href: string; createdAt: string; unread: boolean }
@@ -18,22 +18,33 @@ function notificationTime(value: string) {
 
 export function NotificationMenu() {
   const [feed, setFeed] = useState<NotificationFeed>({ items: [], unreadCount: 0 })
-  const [loaded, setLoaded] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  async function loadNotifications(open: boolean) {
-    if (!open || loaded || loading) return
+  const loadNotifications = useCallback(async () => {
     setLoading(true)
     try {
       const response = await fetch('/api/notifications', { cache: 'no-store' })
       if (response.ok) setFeed(await response.json() as NotificationFeed)
     } finally {
-      setLoaded(true)
       setLoading(false)
     }
-  }
+  }, [])
 
-  return <details className="notification-menu" onToggle={(event) => void loadNotifications(event.currentTarget.open)}>
+  useEffect(() => {
+    const initial = window.setTimeout(() => void loadNotifications(), 0)
+    const interval = window.setInterval(() => void loadNotifications(), 30_000)
+    const onFocus = () => void loadNotifications()
+    window.addEventListener('focus', onFocus)
+    window.addEventListener('islik:messages-read', onFocus)
+    return () => {
+      window.clearTimeout(initial)
+      window.clearInterval(interval)
+      window.removeEventListener('focus', onFocus)
+      window.removeEventListener('islik:messages-read', onFocus)
+    }
+  }, [loadNotifications])
+
+  return <details className="notification-menu" onToggle={(event) => { if (event.currentTarget.open) void loadNotifications() }}>
     <summary aria-label="Bildirimleri aç"><span aria-hidden="true">🔔</span>{feed.unreadCount > 0 && <strong>{Math.min(feed.unreadCount, 9)}{feed.unreadCount > 9 ? '+' : ''}</strong>}</summary>
     <div className="notification-popover">
       <div className="notification-popover-head"><div><span>BİLDİRİMLER</span><h2>Son gelişmeler</h2></div>{feed.unreadCount > 0 && <form action={markNotificationsRead}><button type="submit">Tümünü okundu işaretle</button></form>}</div>
