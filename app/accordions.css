@@ -199,3 +199,43 @@
     margin: 24px 18px;
   }
 }
+
+.employer-project-table .project-table-head,
+.employer-project-table article {
+  grid-template-columns: minmax(230px, 1.8fr) .55fr .65fr .65fr minmax(175px, .85fr);
+}
+
+.project-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.project-actions .round-link {
+  margin-left: 0;
+  flex: none;
+}
+
+.project-review-link {
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--coral);
+  color: var(--coral);
+  font-size: 8px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.project-reviewed {
+  color: #557000;
+  font-size: 8px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .employer-project-table .project-table-head,
+  .employer-project-table article {
+    min-width: 880px;
+  }
+}
