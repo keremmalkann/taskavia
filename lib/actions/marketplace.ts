@@ -241,7 +241,21 @@ export async function completeJob(jobId: string) {
   const { error } = await supabase.rpc('complete_job', { target_job_id: jobId })
   if (error) go(`/jobs/${jobId}`, 'error', 'İş tamamlandı olarak işaretlenemedi.')
   revalidatePath(`/jobs/${jobId}`)
+  revalidatePath('/employer')
+  revalidatePath('/freelancer')
   go(`/jobs/${jobId}`, 'message', 'İş tamamlandı. Taraflar artık değerlendirme bırakabilir.')
+}
+
+export async function completeJobFromWorkspace(proposalId: string, jobId: string) {
+  const { supabase } = await requireRole('employer')
+  const workspacePath = `/messages/${proposalId}`
+  const { error } = await supabase.rpc('complete_job', { target_job_id: jobId })
+  if (error) go(workspacePath, 'error', 'Çalışma tamamlandı olarak işaretlenemedi.')
+  revalidatePath(workspacePath)
+  revalidatePath(`/jobs/${jobId}`)
+  revalidatePath('/employer')
+  revalidatePath('/freelancer')
+  go(workspacePath, 'message', 'Çalışma tamamlandı. Artık karşılıklı değerlendirme bırakabilirsiniz.')
 }
 
 export async function sendMessage(proposalId: string, formData: FormData) {

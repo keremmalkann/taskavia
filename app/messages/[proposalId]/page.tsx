@@ -2,22 +2,20 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { MarketplaceShell, Feedback } from '@/app/marketplace-shell'
-import { releasePayment, startCheckout } from '@/lib/actions/marketplace'
+import { completeJobFromWorkspace } from '@/lib/actions/marketplace'
 import { requireUser } from '@/lib/auth/role'
-import { formatCurrency } from '@/lib/marketplace'
 import { MessageThread } from './message-thread'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Çalışma Alanı — İşlik', description: 'Proje mesajları ve güvenli ödeme alanı.' }
+export const metadata: Metadata = { title: 'Çalışma Alanı — İşlik', description: 'Proje mesajlarını ve çalışma durumunu yönet.' }
 
 export default async function MessagesPage({ params, searchParams }: { params: Promise<{ proposalId: string }>; searchParams: Promise<{ error?: string; message?: string }> }) {
   const [{ proposalId }, feedback] = await Promise.all([params, searchParams])
   const { supabase, user, role, fullName } = await requireUser()
-  const { data: proposal } = await supabase.from('proposals').select('*, jobs!inner(id, title, status, employer_id, employer:profiles!jobs_employer_id_fkey(full_name, company_name)), freelancer:profiles!proposals_freelancer_id_fkey(id, full_name, title), payments(id, amount, platform_fee, status)').eq('id', proposalId).eq('status', 'accepted').maybeSingle()
+  const { data: proposal } = await supabase.from('proposals').select('*, jobs!inner(id, title, status, employer_id, employer:profiles!jobs_employer_id_fkey(full_name, company_name)), freelancer:profiles!proposals_freelancer_id_fkey(id, full_name, title)').eq('id', proposalId).eq('status', 'accepted').maybeSingle()
   if (!proposal) notFound()
   const job = Array.isArray(proposal.jobs) ? proposal.jobs[0] : proposal.jobs
   const freelancer = Array.isArray(proposal.freelancer) ? proposal.freelancer[0] : proposal.freelancer
-  const payment = Array.isArray(proposal.payments) ? proposal.payments[0] : proposal.payments
   const employer = Array.isArray(job.employer) ? job.employer[0] : job.employer
   const { data: messages } = await supabase.from('messages').select('id, sender_id, body, created_at').eq('proposal_id', proposalId).order('created_at', { ascending: true })
   const counterpart = role === 'employer' ? freelancer?.full_name : employer?.company_name || employer?.full_name || 'İşveren'
@@ -35,11 +33,10 @@ export default async function MessagesPage({ params, searchParams }: { params: P
         jobTitle={job.title}
         initialMessages={messages ?? []}
       />
-      <aside className="payment-panel message-payment-panel"><span>PROJE VE ÖDEME</span><h2>{formatCurrency(proposal.price)}</h2><p>Platform hizmet bedeli dahil proje bütçesi.</p><div className="message-project-summary"><small>PROJE</small><strong>{job.title}</strong><small>ÇALIŞMA ARKADAŞIN</small><strong>{counterpart}</strong></div><div className="payment-status"><i className={payment?.status ?? 'pending'} />{payment?.status === 'funded' ? 'Ödeme emanette' : payment?.status === 'released' ? 'Freelancer’a aktarıldı' : 'Ödeme bekleniyor'}</div>
-        {role === 'employer' && !payment && <form action={startCheckout.bind(null, proposalId)}><button type="submit">Stripe ile öde →</button></form>}
-        {role === 'employer' && payment?.status === 'funded' && job.status === 'completed' && <form action={releasePayment.bind(null, proposalId)}><button type="submit">Ödemeyi serbest bırak →</button></form>}
+      <aside className="payment-panel message-payment-panel project-completion-panel"><span>PROJE DURUMU</span><h2>{job.status === 'completed' ? 'Çalışma tamamlandı' : 'Çalışma devam ediyor'}</h2><p>{job.status === 'completed' ? 'Proje kapatıldı. Artık çalışma deneyiminizi değerlendirebilirsiniz.' : 'Teslimat ve görüşmeler tamamlandığında işveren çalışmayı kapatabilir.'}</p><div className="message-project-summary"><small>PROJE</small><strong>{job.title}</strong><small>ÇALIŞMA ARKADAŞIN</small><strong>{counterpart}</strong></div><div className="payment-status"><i className={job.status === 'completed' ? 'released' : 'funded'} />{job.status === 'completed' ? 'Çalışma tamamlandı' : 'Aktif çalışma'}</div>
+        {role === 'employer' && job.status === 'assigned' && <form action={completeJobFromWorkspace.bind(null, proposalId, job.id)}><button type="submit">Çalışmayı tamamla →</button></form>}
         {job.status === 'completed' && <Link className="review-link" href={`/reviews/new?job=${job.id}&to=${reviewee}`}>Değerlendirme bırak →</Link>}
-        <small>Stripe Connect etkin değilse ödeme butonu yapılandırma uyarısı verir. Gerçek para akışı için platform hesabı doğrulanmalıdır.</small>
+        <small>{job.status === 'completed' ? 'Her taraf bu proje için yalnızca bir değerlendirme bırakabilir.' : role === 'employer' ? 'Bu işlem projeyi iki taraf için de tamamlandı olarak işaretler.' : 'İşveren çalışmayı tamamladığında değerlendirme alanı açılır.'}</small>
       </aside>
     </div>
   </MarketplaceShell>
