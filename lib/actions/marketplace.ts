@@ -12,7 +12,8 @@ function text(formData: FormData, key: string) {
 }
 
 function go(path: string, kind: 'error' | 'message', message: string): never {
-  redirect(`${path}?${kind}=${encodeURIComponent(message)}`)
+  const separator = path.includes('?') ? '&' : '?'
+  redirect(`${path}${separator}${kind}=${encodeURIComponent(message)}`)
 }
 
 const portfolioTypes: Record<string, string> = {
@@ -257,11 +258,13 @@ export async function createReview(jobId: string, revieweeId: string, formData: 
   const { supabase, user } = await requireUser()
   const rating = Number(text(formData, 'rating'))
   const comment = text(formData, 'comment')
-  if (rating < 1 || rating > 5) go(`/reviews/new`, 'error', '1 ile 5 arasında bir puan seç.')
+  const reviewPath = `/reviews/new?job=${encodeURIComponent(jobId)}&to=${encodeURIComponent(revieweeId)}`
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) go(reviewPath, 'error', '1 ile 5 arasında bir puan seç.')
   const { error } = await supabase.from('reviews').insert({ job_id: jobId, reviewer_id: user.id, reviewee_id: revieweeId, rating, comment: comment || null })
-  if (error) go(`/reviews/new?job=${jobId}&to=${revieweeId}`, 'error', messageFromError(error, 'Değerlendirme kaydedilemedi.'))
+  if (error) go(reviewPath, 'error', messageFromError(error, 'Değerlendirme kaydedilemedi.'))
   revalidatePath('/profile')
-  go(`/reviews/new?job=${jobId}&to=${revieweeId}`, 'message', 'Değerlendirmen yayınlandı.')
+  revalidatePath(`/profiles/${revieweeId}`)
+  go(reviewPath, 'message', 'Değerlendirmen yayınlandı.')
 }
 
 export async function startCheckout(proposalId: string) {
