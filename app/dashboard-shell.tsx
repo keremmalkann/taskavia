@@ -23,7 +23,7 @@ export function DashboardShell({ name, roleLabel, navItems, action, children }: 
         <nav className="dashboard-nav" aria-label="Panel menüsü">
           <p>MENÜ</p>
           {navItems.map((item) => (
-            <Link className={item.active ? 'active' : ''} href={item.href ?? '#'} key={item.label}>
+            <Link className={item.active ? 'active' : ''} href={item.href ?? '#'} key={item.label} aria-current={item.active ? 'page' : undefined}>
               <span className="dashboard-nav-icon" aria-hidden="true">{item.icon}</span>
               <span>{item.label}</span>
               {item.badge && <strong>{item.badge}</strong>}
@@ -49,6 +49,13 @@ export function DashboardShell({ name, roleLabel, navItems, action, children }: 
         </header>
         {children}
       </section>
+      <nav className="mobile-dashboard-nav" aria-label="Mobil panel menüsü">
+        {navItems.map((item) => <Link className={item.active ? 'active' : ''} href={item.href ?? '#'} key={item.label} aria-current={item.active ? 'page' : undefined}>
+          <span aria-hidden="true">{item.icon}</span>
+          <strong>{item.label}</strong>
+          {item.badge && <em>{item.badge}</em>}
+        </Link>)}
+      </nav>
     </main>
   )
 }
