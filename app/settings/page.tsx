@@ -74,20 +74,13 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             <div className="settings-session"><div><strong>Tüm cihazlardaki oturumlar</strong><small>Hesabının açık olduğu diğer cihazlardan güvenli şekilde çıkış yap.</small></div><form action={signOutEverywhere}><button type="submit">Tüm oturumları kapat</button></form></div>
           </div>
         </details>
-        <details className="settings-card settings-accordion settings-danger-card">
-          <AccordionSummary number="05" title="Hesabı sil" description="Hesabını ve İşlik'teki tüm verilerini kalıcı olarak kaldır." status="Kalıcı işlem" />
-          <div className="settings-accordion-body settings-danger-body">
-            <div><strong>Bu işlem geri alınamaz.</strong><p>Profilin, ilanların, tekliflerin, mesajların, portföyün ve hesap kaydın tamamen silinir. Daha sonra aynı e-posta adresiyle yeniden kayıt olabilirsin.</p></div>
-            <form action={deleteAccount}><label>Onaylamak için <b>HESABIMI SİL</b> yaz<input name="confirmation" type="text" autoComplete="off" required placeholder="HESABIMI SİL" /></label><button type="submit">Hesabımı kalıcı olarak sil</button></form>
-          </div>
-        </details>
         <footer className="settings-save-bar">
           <button className="marketplace-submit settings-save" type="submit" form="preferences-form">Değişiklikleri kaydet →</button>
         </footer>
       </div>
 
       <aside className="settings-account-card">
-        <div className="settings-account-top"><span className="profile-preview-label">HESAP ÖZETİ</span><strong>AKTİF</strong></div>
+        <div className="settings-account-top"><span className="profile-preview-label">HESAP ÖZETİ</span><div className="settings-account-actions"><strong>AKTİF</strong><details className="settings-delete-menu"><summary>Hesabı sil</summary><div><strong>Hesabı kalıcı olarak sil</strong><p>Bu işlem profilini ve tüm hesap verilerini geri alınamaz şekilde kaldırır.</p><form action={deleteAccount}><label>Onaylamak için <b>HESABIMI SİL</b> yaz<input name="confirmation" type="text" autoComplete="off" required placeholder="HESABIMI SİL" /></label><button type="submit">Hesabımı sil</button></form></div></details></div></div>
         <div className="settings-account-avatar">{fullName.slice(0, 2).toLocaleUpperCase('tr-TR')}</div>
         <h2>{fullName}</h2><p>{role === 'employer' ? 'İşveren hesabı' : 'Freelancer hesabı'}</p>
         <div className="settings-account-tags"><span>{role === 'employer' ? 'İşveren' : 'Freelancer'}</span><span>{user.email_confirmed_at ? 'E-posta doğrulandı' : 'Doğrulama bekliyor'}</span></div>
