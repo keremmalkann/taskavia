@@ -22,9 +22,11 @@ export async function GET(request: Request) {
 
   if (error) {
     const errorUrl = new URL(isPasswordRecovery ? "/forgot-password" : "/login", getSiteUrl());
-    errorUrl.searchParams.set("error", isPasswordRecovery
-      ? "Parola sıfırlama bağlantısının süresi dolmuş veya daha önce kullanılmış."
-      : "Doğrulama bağlantısının süresi dolmuş veya daha önce kullanılmış.");
+    if (isPasswordRecovery) {
+      errorUrl.searchParams.set("error", "Parola sıfırlama bağlantısının süresi dolmuş veya daha önce kullanılmış.");
+    } else {
+      errorUrl.searchParams.set("message", "E-posta doğrulama işlemi tamamlandı. Hesabın doğrulandıysa giriş yapabilirsin.");
+    }
     return NextResponse.redirect(errorUrl);
   }
 
