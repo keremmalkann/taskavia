@@ -7,7 +7,7 @@ import { requireRole } from '@/lib/auth/role'
 import { formatCurrency, formatDate } from '@/lib/marketplace'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Teklifleri Karşılaştır — İşlik', description: 'Bir ilana gelen freelancer tekliflerini karşılaştır.' }
+export const metadata: Metadata = { title: 'Teklif İnceleme — İşlik', description: 'Bir ilana gelen freelancer tekliflerini incele ve değerlendir.' }
 
 type Freelancer = {
   id: string
@@ -75,26 +75,27 @@ export default async function ProposalComparisonPage({ params, searchParams }: {
   const lowestPrice = proposals.length ? Math.min(...proposals.map((proposal) => Number(proposal.price))) : 0
   const shortestDuration = proposals.length ? Math.min(...proposals.map((proposal) => Number(proposal.duration_days))) : 0
   const accepted = proposals.find((proposal) => proposal.status === 'accepted')
+  const isSingleProposal = proposals.length === 1
 
   return <MarketplaceShell name={fullName} role="employer" active="dashboard">
     <Feedback {...feedback} />
     {(jobError || proposalError) && <SetupNotice />}
     {job && <>
       <header className="comparison-head">
-        <div><p>TEKLİF KARŞILAŞTIRMA</p><h1>{job.title}</h1><span>{job.category} · {formatCurrency(job.budget_min)} – {formatCurrency(job.budget_max)} · Son tarih: {formatDate(job.deadline)}</span></div>
+        <div><p>{isSingleProposal ? 'TEKLİF İNCELEME VE ONAY' : 'TEKLİF KARŞILAŞTIRMA'}</p><h1>{job.title}</h1><span>{job.category} · {formatCurrency(job.budget_min)} – {formatCurrency(job.budget_max)} · Son tarih: {formatDate(job.deadline)}</span></div>
         <Link href={`/jobs/${job.id}`}>İlanı görüntüle →</Link>
       </header>
 
-      <section className="comparison-summary" aria-label="Teklif özeti">
+      <section className={`comparison-summary ${isSingleProposal ? 'single' : ''}`} aria-label="Teklif özeti">
         <div><small>GELEN TEKLİF</small><strong>{proposals.length}</strong><span>{proposals.length ? 'Toplam aday' : 'Henüz aday yok'}</span></div>
-        <div><small>EN DÜŞÜK TEKLİF</small><strong>{proposals.length ? formatCurrency(lowestPrice) : '—'}</strong><span>Karar verirken kapsamı da değerlendir</span></div>
-        <div><small>EN KISA SÜRE</small><strong>{proposals.length ? `${shortestDuration} gün` : '—'}</strong><span>Tahmini teslim süresi</span></div>
+        <div><small>{isSingleProposal ? 'TEKLİF TUTARI' : 'EN DÜŞÜK TEKLİF'}</small><strong>{proposals.length ? formatCurrency(lowestPrice) : '—'}</strong><span>{isSingleProposal ? 'Adayın sunduğu çalışma bedeli' : 'Karar verirken kapsamı da değerlendir'}</span></div>
+        <div><small>{isSingleProposal ? 'TESLİM SÜRESİ' : 'EN KISA SÜRE'}</small><strong>{proposals.length ? `${shortestDuration} gün` : '—'}</strong><span>Tahmini teslim süresi</span></div>
         <div className="comparison-brief"><small>ARANAN BECERİLER</small><div>{job.skills?.length ? job.skills.map((skill: string) => <span key={skill}>{skill}</span>) : <span>Belirtilmedi</span>}</div></div>
       </section>
 
       {accepted && <div className="comparison-accepted"><div><span>SEÇİM TAMAMLANDI</span><strong>{(Array.isArray(accepted.freelancer) ? accepted.freelancer[0] : accepted.freelancer)?.full_name} ile çalışma başladı.</strong></div><Link href={`/messages/${accepted.id}`}>Çalışma alanına git →</Link></div>}
 
-      <section className="comparison-grid">
+      <section className={`comparison-grid ${isSingleProposal ? 'single' : ''}`}>
         {proposals.map((proposal) => {
           const freelancer = Array.isArray(proposal.freelancer) ? proposal.freelancer[0] : proposal.freelancer
           const summary = reviewSummary.get(proposal.freelancer_id)
@@ -112,10 +113,9 @@ export default async function ProposalComparisonPage({ params, searchParams }: {
             </dl>
             <div className="comparison-skills"><small>BECERİ EŞLEŞMESİ</small><div>{freelancer?.skills?.length ? freelancer.skills.map((skill) => <span key={skill} className={skillMatches.includes(skill) ? 'matched' : ''}>{skill}</span>) : <span>Henüz beceri eklenmemiş</span>}</div></div>
             <div className="comparison-message"><small>ADAYIN MESAJI</small><p>{proposal.message}</p></div>
-            <footer>
-              <span>{formatDate(proposal.created_at)} tarihinde gönderildi</span>
-              <Link className="comparison-profile-link" href={`/profiles/${proposal.freelancer_id}`}>Profili ve portföyü incele →</Link>
-              {proposal.status === 'pending' && job.status === 'open' && <form action={acceptProposal.bind(null, job.id, proposal.id)}><label><input type="checkbox" required /> Bu freelancer ile çalışmayı onaylıyorum.</label><button type="submit">Teklifi kabul et →</button></form>}
+            <footer className="comparison-card-footer">
+              <div className="comparison-footer-meta"><span>{formatDate(proposal.created_at)} tarihinde gönderildi</span><Link className="comparison-profile-link" href={`/profiles/${proposal.freelancer_id}`}>Profili ve portföyü incele →</Link></div>
+              {proposal.status === 'pending' && job.status === 'open' && <form className="comparison-accept-form" action={acceptProposal.bind(null, job.id, proposal.id)}><label><input type="checkbox" required /><span><strong>Çalışmayı onayla</strong><small>Bu freelancer ile projeyi başlatmak istediğini doğrula.</small></span></label><button type="submit">Teklifi kabul et →</button></form>}
               {proposal.status === 'accepted' && <Link href={`/messages/${proposal.id}`}>Mesajlaşmaya git →</Link>}
             </footer>
           </article>
