@@ -75,7 +75,6 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
           </div>
         </details>
         <footer className="settings-save-bar">
-          <div><strong>Tercihlerini güncelle</strong><small>Bildirim, gizlilik ve bölge seçimlerini hesabına uygula.</small></div>
           <button className="marketplace-submit settings-save" type="submit" form="preferences-form">Değişiklikleri kaydet →</button>
         </footer>
       </div>
