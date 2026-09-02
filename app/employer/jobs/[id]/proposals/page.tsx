@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Feedback, MarketplaceShell, SetupNotice } from '@/app/marketplace-shell'
-import { acceptProposal } from '@/lib/actions/marketplace'
+import { acceptProposal, rejectProposal } from '@/lib/actions/marketplace'
 import { requireRole } from '@/lib/auth/role'
 import { formatCurrency, formatDate } from '@/lib/marketplace'
 
@@ -32,7 +32,7 @@ type Proposal = {
 const statusLabel: Record<string, string> = {
   pending: 'Değerlendiriliyor',
   accepted: 'Kabul edildi',
-  rejected: 'Sonuçlandı',
+  rejected: 'Reddedildi',
 }
 
 export default async function ProposalComparisonPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; message?: string }> }) {
@@ -115,7 +115,7 @@ export default async function ProposalComparisonPage({ params, searchParams }: {
             <div className="comparison-message"><small>ADAYIN MESAJI</small><p>{proposal.message}</p></div>
             <footer className="comparison-card-footer">
               <div className="comparison-footer-meta"><span>{formatDate(proposal.created_at)} tarihinde gönderildi</span><Link className="comparison-profile-link" href={`/profiles/${proposal.freelancer_id}`}>Profili ve portföyü incele →</Link></div>
-              {proposal.status === 'pending' && job.status === 'open' && <form className="comparison-accept-form" action={acceptProposal.bind(null, job.id, proposal.id)}><label><input type="checkbox" required /><span><strong>Çalışmayı onayla</strong><small>Bu freelancer ile projeyi başlatmak istediğini doğrula.</small></span></label><button type="submit">Teklifi kabul et →</button></form>}
+              {proposal.status === 'pending' && job.status === 'open' && <div className="comparison-decision-actions" aria-label="Teklif kararı"><form action={rejectProposal.bind(null, job.id, proposal.id)}><button className="reject" type="submit">Teklifi reddet</button></form><form action={acceptProposal.bind(null, job.id, proposal.id)}><button className="accept" type="submit">Teklifi kabul et →</button></form></div>}
               {proposal.status === 'accepted' && <Link href={`/messages/${proposal.id}`}>Mesajlaşmaya git →</Link>}
             </footer>
           </article>
