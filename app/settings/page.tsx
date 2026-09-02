@@ -65,7 +65,10 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             <AccordionSummary number="03" title="Dil & bölge" description="Dil, para birimi ve saat dilimi tercihlerini gör." status="Türkçe · ₺" />
             <div className="settings-accordion-body settings-locale-body"><div className="settings-region-grid"><div><small>DİL</small><strong>Türkçe</strong></div><div><small>PARA BİRİMİ</small><strong>Türk Lirası (₺)</strong></div><div><small>SAAT DİLİMİ</small><strong>İstanbul</strong></div></div></div>
           </details>
-          <button className="marketplace-submit settings-save" type="submit">Değişiklikleri kaydet →</button>
+          <footer className="settings-save-bar">
+            <div><strong>Tercihlerini güncelle</strong><small>Bildirim, gizlilik ve bölge seçimlerini hesabına uygula.</small></div>
+            <button className="marketplace-submit settings-save" type="submit">Değişiklikleri kaydet →</button>
+          </footer>
         </form>
 
         <details className="settings-card settings-accordion settings-security-card">
