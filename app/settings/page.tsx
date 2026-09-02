@@ -36,7 +36,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
     <Feedback {...params} />
     <div className="settings-layout">
       <div className="settings-main">
-        <form action={updateSettings} className="settings-card settings-preferences-card">
+        <form id="preferences-form" action={updateSettings} className="settings-card settings-preferences-card">
           <div className="settings-preferences-intro"><span>TERCİHLER</span><h2>Hesabını kendine göre düzenle.</h2><p>Başlıklara dokunarak ayrıntıları açabilir, seçimlerini tek seferde kaydedebilirsin.</p></div>
 
           <details className="settings-accordion">
@@ -65,10 +65,6 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             <AccordionSummary number="03" title="Dil & bölge" description="Dil, para birimi ve saat dilimi tercihlerini gör." status="Türkçe · ₺" />
             <div className="settings-accordion-body settings-locale-body"><div className="settings-region-grid"><div><small>DİL</small><strong>Türkçe</strong></div><div><small>PARA BİRİMİ</small><strong>Türk Lirası (₺)</strong></div><div><small>SAAT DİLİMİ</small><strong>İstanbul</strong></div></div></div>
           </details>
-          <footer className="settings-save-bar">
-            <div><strong>Tercihlerini güncelle</strong><small>Bildirim, gizlilik ve bölge seçimlerini hesabına uygula.</small></div>
-            <button className="marketplace-submit settings-save" type="submit">Değişiklikleri kaydet →</button>
-          </footer>
         </form>
 
         <details className="settings-card settings-accordion settings-security-card">
@@ -78,6 +74,10 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             <div className="settings-session"><div><strong>Tüm cihazlardaki oturumlar</strong><small>Hesabının açık olduğu diğer cihazlardan güvenli şekilde çıkış yap.</small></div><form action={signOutEverywhere}><button type="submit">Tüm oturumları kapat</button></form></div>
           </div>
         </details>
+        <footer className="settings-save-bar">
+          <div><strong>Tercihlerini güncelle</strong><small>Bildirim, gizlilik ve bölge seçimlerini hesabına uygula.</small></div>
+          <button className="marketplace-submit settings-save" type="submit" form="preferences-form">Değişiklikleri kaydet →</button>
+        </footer>
       </div>
 
       <aside className="settings-account-card">
