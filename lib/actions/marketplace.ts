@@ -216,7 +216,19 @@ export async function createProposal(jobId: string, formData: FormData) {
   const durationDays = Number(text(formData, 'durationDays'))
   const message = text(formData, 'message')
 
-  if (price <= 0 || durationDays <= 0 || message.length < 10) go(`/jobs/${jobId}`, 'error', 'Teklif tutarı, süre ve mesaj alanlarını kontrol et.')
+  if (!Number.isFinite(price) || price <= 0 || !Number.isInteger(durationDays) || durationDays <= 0 || message.length < 10) go(`/jobs/${jobId}`, 'error', 'Teklif tutarı, süre ve mesaj alanlarını kontrol et.')
+
+  const { data: job, error: jobError } = await supabase
+    .from('jobs')
+    .select('budget_min, status')
+    .eq('id', jobId)
+    .maybeSingle()
+
+  if (jobError || !job || job.status !== 'open') go(`/jobs/${jobId}`, 'error', 'Bu ilan teklif almaya açık değil.')
+  const minimumBudget = Number(job.budget_min)
+  if (price < minimumBudget) {
+    go(`/jobs/${jobId}`, 'error', `Teklif tutarı ilanın minimum bütçesi olan ${new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(minimumBudget)} tutarından az olamaz.`)
+  }
 
   const { error } = await supabase.from('proposals').insert({ job_id: jobId, freelancer_id: user.id, price, duration_days: durationDays, message })
   if (error) go(`/jobs/${jobId}`, 'error', messageFromError(error, 'Teklif gönderilemedi.'))
