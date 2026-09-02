@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Feedback, MarketplaceShell } from '@/app/marketplace-shell'
 import { changePassword, deleteAccount, signOutEverywhere, updateSettings } from '@/lib/actions/settings'
+import { isAdminEmail } from '@/lib/auth/admin'
 import { requireUser } from '@/lib/auth/role'
 
 export const dynamic = 'force-dynamic'
@@ -30,6 +31,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   const enabledNotificationCount = notificationValues.filter(Boolean).length
   const privacyStatus = privacy.profile_visibility === 'members' ? 'Yalnızca üyeler' : 'Herkese açık'
   const joinedAt = new Intl.DateTimeFormat('tr-TR', { month: 'long', year: 'numeric', timeZone: 'Europe/Istanbul' }).format(new Date(user.created_at))
+  const isAdmin = isAdminEmail(user.email)
 
   return <MarketplaceShell name={fullName} role={role} active="settings">
     <div className="marketplace-page-head"><div><p>HESAP AYARLARI</p><h1>Kontrol sende.</h1><span>Bildirimlerini, görünürlüğünü ve hesap güvenliğini tek yerden yönet.</span></div><Link href="/profile">Profili düzenle →</Link></div>
@@ -85,7 +87,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         <h2>{fullName}</h2><p>{role === 'employer' ? 'İşveren hesabı' : 'Freelancer hesabı'}</p>
         <div className="settings-account-tags"><span>{role === 'employer' ? 'İşveren' : 'Freelancer'}</span><span>{user.email_confirmed_at ? 'E-posta doğrulandı' : 'Doğrulama bekliyor'}</span></div>
         <dl><div><dt>E-posta</dt><dd>{user.email}</dd></div><div><dt>E-posta durumu</dt><dd className={user.email_confirmed_at ? 'verified' : ''}>{user.email_confirmed_at ? 'Doğrulandı' : 'Doğrulanmadı'}</dd></div><div><dt>Üyelik</dt><dd>{joinedAt}</dd></div></dl>
-        <Link href="/profile">Profil bilgilerini düzenle →</Link>
+        {isAdmin && <Link className="settings-admin-link" href="/admin">Yönetim panelini aç →</Link>}<Link href="/profile">Profil bilgilerini düzenle →</Link>
       </aside>
     </div>
   </MarketplaceShell>
