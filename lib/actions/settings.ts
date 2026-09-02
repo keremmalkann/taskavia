@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { requireUser } from '@/lib/auth/role'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 function go(kind: 'error' | 'message', message: string): never {
   redirect(`/settings?${kind}=${encodeURIComponent(message)}`)
@@ -65,4 +66,52 @@ export async function signOutEverywhere() {
   const { error } = await supabase.auth.signOut({ scope: 'global' })
   if (error) go('error', 'Oturumlar kapatılamadı. Lütfen tekrar dene.')
   redirect('/login?message=' + encodeURIComponent('Tüm cihazlardaki oturumların kapatıldı.'))
+}
+
+function portfolioStoragePath(url: string | null) {
+  if (!url) return null
+  const marker = '/storage/v1/object/public/portfolios/'
+  const index = url.indexOf(marker)
+  return index === -1 ? null : decodeURIComponent(url.slice(index + marker.length))
+}
+
+export async function deleteAccount(formData: FormData) {
+  const confirmation = String(formData.get('confirmation') ?? '').trim().toLocaleUpperCase('tr-TR')
+  if (confirmation !== 'HESABIMI SİL') go('error', 'Hesabı silmek için onay alanına HESABIMI SİL yazmalısın.')
+
+  const { supabase, user } = await requireUser()
+  const admin = createAdminClient()
+  if (!admin) go('error', 'Hesap silme servisi şu anda kullanılamıyor. Lütfen daha sonra tekrar dene.')
+
+  const [{ data: profile, error: profileError }, { data: portfolioItems, error: portfolioError }] = await Promise.all([
+    admin.from('profiles').select('portfolio_url, resume_path').eq('id', user.id).maybeSingle(),
+    admin.from('portfolio_items').select('file_url').eq('profile_id', user.id),
+  ])
+  if (profileError || portfolioError) go('error', 'Hesap verileri silme işlemine hazırlanamadı. Lütfen tekrar dene.')
+
+  const portfolioPaths = [
+    portfolioStoragePath(profile?.portfolio_url ?? null),
+    ...(portfolioItems ?? []).map((item) => portfolioStoragePath(item.file_url)),
+  ].filter((path): path is string => Boolean(path))
+  if (portfolioPaths.length) {
+    const { error } = await admin.storage.from('portfolios').remove(portfolioPaths)
+    if (error) go('error', 'Portföy dosyaları silinemedi. Lütfen tekrar dene.')
+  }
+
+  if (profile?.resume_path) {
+    const { error } = await admin.storage.from('resumes').remove([profile.resume_path])
+    if (error) go('error', 'Özgeçmiş dosyası silinemedi. Lütfen tekrar dene.')
+  }
+
+  const { error: paymentError } = await admin
+    .from('payments')
+    .delete()
+    .or(`employer_id.eq.${user.id},freelancer_id.eq.${user.id}`)
+  if (paymentError) go('error', 'Hesabın ilişkili ödeme kayıtları temizlenemedi. Lütfen tekrar dene.')
+
+  const { error: deleteError } = await admin.auth.admin.deleteUser(user.id)
+  if (deleteError) go('error', 'Hesap tamamen silinemedi. Lütfen tekrar dene.')
+
+  await supabase.auth.signOut({ scope: 'local' })
+  redirect('/signup?message=' + encodeURIComponent('Hesabın ve ilişkili verilerin kalıcı olarak silindi. Aynı e-posta adresiyle yeniden kayıt olabilirsin.'))
 }

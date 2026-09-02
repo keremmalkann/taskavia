@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Feedback, MarketplaceShell } from '@/app/marketplace-shell'
-import { changePassword, signOutEverywhere, updateSettings } from '@/lib/actions/settings'
+import { changePassword, deleteAccount, signOutEverywhere, updateSettings } from '@/lib/actions/settings'
 import { requireUser } from '@/lib/auth/role'
 
 export const dynamic = 'force-dynamic'
@@ -72,6 +72,13 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
           <div className="settings-accordion-body settings-security-body">
             <form action={changePassword} className="settings-password-form"><label>Yeni şifre<input name="password" type="password" minLength={8} autoComplete="new-password" required placeholder="En az 8 karakter" /></label><label>Yeni şifre tekrar<input name="passwordConfirmation" type="password" minLength={8} autoComplete="new-password" required placeholder="Şifreni tekrar yaz" /></label><button type="submit">Şifreyi değiştir</button></form>
             <div className="settings-session"><div><strong>Tüm cihazlardaki oturumlar</strong><small>Hesabının açık olduğu diğer cihazlardan güvenli şekilde çıkış yap.</small></div><form action={signOutEverywhere}><button type="submit">Tüm oturumları kapat</button></form></div>
+          </div>
+        </details>
+        <details className="settings-card settings-accordion settings-danger-card">
+          <AccordionSummary number="05" title="Hesabı sil" description="Hesabını ve İşlik'teki tüm verilerini kalıcı olarak kaldır." status="Kalıcı işlem" />
+          <div className="settings-accordion-body settings-danger-body">
+            <div><strong>Bu işlem geri alınamaz.</strong><p>Profilin, ilanların, tekliflerin, mesajların, portföyün ve hesap kaydın tamamen silinir. Daha sonra aynı e-posta adresiyle yeniden kayıt olabilirsin.</p></div>
+            <form action={deleteAccount}><label>Onaylamak için <b>HESABIMI SİL</b> yaz<input name="confirmation" type="text" autoComplete="off" required placeholder="HESABIMI SİL" /></label><button type="submit">Hesabımı kalıcı olarak sil</button></form>
           </div>
         </details>
         <footer className="settings-save-bar">
