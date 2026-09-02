@@ -248,6 +248,36 @@ export async function acceptProposal(jobId: string, proposalId: string) {
   go(comparisonPath, 'message', 'Teklif kabul edildi. Mesajlaşma artık açık.')
 }
 
+export async function rejectProposal(jobId: string, proposalId: string) {
+  const { supabase, user } = await requireRole('employer')
+  const comparisonPath = `/employer/jobs/${jobId}/proposals`
+  const { data: job, error: jobError } = await supabase
+    .from('jobs')
+    .select('id')
+    .eq('id', jobId)
+    .eq('employer_id', user.id)
+    .eq('status', 'open')
+    .maybeSingle()
+
+  if (jobError || !job) go(comparisonPath, 'error', 'Bu teklif artık reddedilemez.')
+
+  const { data: rejected, error } = await supabase
+    .from('proposals')
+    .update({ status: 'rejected' })
+    .eq('id', proposalId)
+    .eq('job_id', jobId)
+    .eq('status', 'pending')
+    .select('id')
+    .maybeSingle()
+
+  if (error || !rejected) go(comparisonPath, 'error', messageFromError(error, 'Teklif reddedilemedi.'))
+  revalidatePath(`/jobs/${jobId}`)
+  revalidatePath(comparisonPath)
+  revalidatePath('/employer')
+  revalidatePath('/freelancer')
+  go(comparisonPath, 'message', 'Teklif reddedildi. İlan yeni tekliflere açık kalmaya devam ediyor.')
+}
+
 export async function completeJob(jobId: string) {
   const { supabase } = await requireRole('employer')
   const { error } = await supabase.rpc('complete_job', { target_job_id: jobId })
