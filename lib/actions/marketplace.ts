@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { requireRole, requireUser } from '@/lib/auth/role'
+import { sendNotificationEmail } from '@/lib/email-notifications'
 import { getSiteUrl } from '@/lib/site-url'
 import { messageFromError, parseSkills } from '@/lib/marketplace'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -28,6 +29,19 @@ function storagePathFromPublicUrl(url: string) {
   const markerIndex = url.indexOf(marker)
   if (markerIndex === -1) return null
   return decodeURIComponent(url.slice(markerIndex + marker.length))
+}
+
+async function sendJobCompletedEmail(proposalId: string, freelancerId: string, jobTitle: string) {
+  await sendNotificationEmail({
+    recipientId: freelancerId,
+    preference: 'project_updates',
+    eventKey: `job-${proposalId}-completed`,
+    subject: `Çalışma tamamlandı: ${jobTitle}`,
+    heading: 'Çalışma tamamlandı olarak işaretlendi.',
+    body: `“${jobTitle}” projesi tamamlandı. İşvereni değerlendirerek çalışma deneyimini paylaşabilirsin.`,
+    ctaLabel: 'Çalışma alanını aç',
+    ctaPath: `/messages/${proposalId}`,
+  })
 }
 
 export async function updateProfile(formData: FormData) {
@@ -211,7 +225,7 @@ export async function createJob(formData: FormData) {
 }
 
 export async function createProposal(jobId: string, formData: FormData) {
-  const { supabase, user } = await requireRole('freelancer')
+  const { supabase, user, fullName } = await requireRole('freelancer')
   const price = Number(text(formData, 'price'))
   const durationDays = Number(text(formData, 'durationDays'))
   const message = text(formData, 'message')
@@ -220,7 +234,7 @@ export async function createProposal(jobId: string, formData: FormData) {
 
   const { data: job, error: jobError } = await supabase
     .from('jobs')
-    .select('budget_min, status')
+    .select('budget_min, status, employer_id, title')
     .eq('id', jobId)
     .maybeSingle()
 
@@ -230,8 +244,22 @@ export async function createProposal(jobId: string, formData: FormData) {
     go(`/jobs/${jobId}`, 'error', `Teklif tutarı ilanın minimum bütçesi olan ${new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(minimumBudget)} tutarından az olamaz.`)
   }
 
-  const { error } = await supabase.from('proposals').insert({ job_id: jobId, freelancer_id: user.id, price, duration_days: durationDays, message })
+  const { data: proposal, error } = await supabase
+    .from('proposals')
+    .insert({ job_id: jobId, freelancer_id: user.id, price, duration_days: durationDays, message })
+    .select('id')
+    .single()
   if (error) go(`/jobs/${jobId}`, 'error', messageFromError(error, 'Teklif gönderilemedi.'))
+  await sendNotificationEmail({
+    recipientId: job.employer_id,
+    preference: 'project_updates',
+    eventKey: `proposal-${proposal.id}-created`,
+    subject: `Yeni teklif: ${job.title}`,
+    heading: 'İlanına yeni bir teklif geldi.',
+    body: `${fullName}, “${job.title}” ilanına ${new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(price)} ve ${durationDays} gün teslim süresiyle teklif verdi.`,
+    ctaLabel: 'Teklifi incele',
+    ctaPath: `/employer/jobs/${jobId}/proposals`,
+  })
   revalidatePath(`/jobs/${jobId}`)
   revalidatePath('/freelancer')
   go(`/jobs/${jobId}`, 'message', 'Teklifin işverene gönderildi.')
@@ -242,6 +270,27 @@ export async function acceptProposal(jobId: string, proposalId: string) {
   const { error } = await supabase.rpc('accept_proposal', { target_proposal_id: proposalId })
   const comparisonPath = `/employer/jobs/${jobId}/proposals`
   if (error) go(comparisonPath, 'error', messageFromError(error, 'Teklif kabul edilemedi.'))
+  const [{ data: job }, { data: proposals }] = await Promise.all([
+    supabase.from('jobs').select('title').eq('id', jobId).single(),
+    supabase.from('proposals').select('id, freelancer_id, status').eq('job_id', jobId),
+  ])
+  if (job) {
+    await Promise.all((proposals ?? []).map((proposal) => {
+      const accepted = proposal.id === proposalId && proposal.status === 'accepted'
+      return sendNotificationEmail({
+        recipientId: proposal.freelancer_id,
+        preference: 'project_updates',
+        eventKey: `proposal-${proposal.id}-${accepted ? 'accepted' : 'rejected'}`,
+        subject: accepted ? `Teklifin kabul edildi: ${job.title}` : `Teklif sonucu: ${job.title}`,
+        heading: accepted ? 'Tebrikler, teklifin kabul edildi.' : 'İşveren başka bir teklifle ilerledi.',
+        body: accepted
+          ? `“${job.title}” projesi için çalışma alanın açıldı. İşverenle mesajlaşarak sonraki adımları planlayabilirsin.`
+          : `“${job.title}” projesindeki teklifin bu kez seçilmedi. Yeni fırsatları keşfetmeye devam edebilirsin.`,
+        ctaLabel: accepted ? 'Çalışma alanına git' : 'Yeni işleri keşfet',
+        ctaPath: accepted ? `/messages/${proposal.id}` : '/jobs',
+      })
+    }))
+  }
   revalidatePath(`/jobs/${jobId}`)
   revalidatePath(comparisonPath)
   revalidatePath('/employer')
@@ -253,7 +302,7 @@ export async function rejectProposal(jobId: string, proposalId: string) {
   const comparisonPath = `/employer/jobs/${jobId}/proposals`
   const { data: job, error: jobError } = await supabase
     .from('jobs')
-    .select('id')
+    .select('id, title')
     .eq('id', jobId)
     .eq('employer_id', user.id)
     .eq('status', 'open')
@@ -267,10 +316,20 @@ export async function rejectProposal(jobId: string, proposalId: string) {
     .eq('id', proposalId)
     .eq('job_id', jobId)
     .eq('status', 'pending')
-    .select('id')
+    .select('id, freelancer_id')
     .maybeSingle()
 
   if (error || !rejected) go(comparisonPath, 'error', messageFromError(error, 'Teklif reddedilemedi.'))
+  await sendNotificationEmail({
+    recipientId: rejected.freelancer_id,
+    preference: 'project_updates',
+    eventKey: `proposal-${rejected.id}-rejected`,
+    subject: `Teklif sonucu: ${job.title}`,
+    heading: 'Teklifin bu kez kabul edilmedi.',
+    body: `“${job.title}” projesindeki teklifin reddedildi. İlan yeni tekliflere açık kalmaya devam ediyor ve diğer fırsatları inceleyebilirsin.`,
+    ctaLabel: 'Yeni işleri keşfet',
+    ctaPath: '/jobs',
+  })
   revalidatePath(`/jobs/${jobId}`)
   revalidatePath(comparisonPath)
   revalidatePath('/employer')
@@ -282,6 +341,11 @@ export async function completeJob(jobId: string) {
   const { supabase } = await requireRole('employer')
   const { error } = await supabase.rpc('complete_job', { target_job_id: jobId })
   if (error) go(`/jobs/${jobId}`, 'error', 'İş tamamlandı olarak işaretlenemedi.')
+  const [{ data: job }, { data: proposal }] = await Promise.all([
+    supabase.from('jobs').select('title').eq('id', jobId).single(),
+    supabase.from('proposals').select('id, freelancer_id').eq('job_id', jobId).eq('status', 'accepted').maybeSingle(),
+  ])
+  if (job && proposal) await sendJobCompletedEmail(proposal.id, proposal.freelancer_id, job.title)
   revalidatePath(`/jobs/${jobId}`)
   revalidatePath('/employer')
   revalidatePath('/freelancer')
@@ -293,6 +357,11 @@ export async function completeJobFromWorkspace(proposalId: string, jobId: string
   const workspacePath = `/messages/${proposalId}`
   const { error } = await supabase.rpc('complete_job', { target_job_id: jobId })
   if (error) go(workspacePath, 'error', 'Çalışma tamamlandı olarak işaretlenemedi.')
+  const [{ data: job }, { data: proposal }] = await Promise.all([
+    supabase.from('jobs').select('title').eq('id', jobId).single(),
+    supabase.from('proposals').select('freelancer_id').eq('id', proposalId).eq('status', 'accepted').maybeSingle(),
+  ])
+  if (job && proposal) await sendJobCompletedEmail(proposalId, proposal.freelancer_id, job.title)
   revalidatePath(workspacePath)
   revalidatePath(`/jobs/${jobId}`)
   revalidatePath('/employer')
@@ -301,23 +370,57 @@ export async function completeJobFromWorkspace(proposalId: string, jobId: string
 }
 
 export async function sendMessage(proposalId: string, formData: FormData) {
-  const { supabase, user } = await requireUser()
+  const { supabase, user, fullName } = await requireUser()
   const body = text(formData, 'body')
   if (!body) go(`/messages/${proposalId}`, 'error', 'Mesaj boş olamaz.')
-  const { error } = await supabase.from('messages').insert({ proposal_id: proposalId, sender_id: user.id, body })
+  const { data: message, error } = await supabase
+    .from('messages')
+    .insert({ proposal_id: proposalId, sender_id: user.id, body })
+    .select('id')
+    .single()
   if (error) go(`/messages/${proposalId}`, 'error', messageFromError(error, 'Mesaj gönderilemedi.'))
+  const { data: proposal } = await supabase.from('proposals').select('job_id, freelancer_id').eq('id', proposalId).maybeSingle()
+  if (proposal) {
+    const { data: job } = await supabase.from('jobs').select('employer_id, title').eq('id', proposal.job_id).maybeSingle()
+    const recipientId = job ? (user.id === proposal.freelancer_id ? job.employer_id : proposal.freelancer_id) : null
+    if (job && recipientId) await sendNotificationEmail({
+      recipientId,
+      preference: 'messages',
+      eventKey: `message-${message.id}`,
+      subject: `${fullName} sana mesaj gönderdi`,
+      heading: 'Yeni bir mesajın var.',
+      body: `“${job.title}” çalışma alanında ${fullName}: ${body.slice(0, 240)}${body.length > 240 ? '…' : ''}`,
+      ctaLabel: 'Mesajı aç',
+      ctaPath: `/messages/${proposalId}`,
+    })
+  }
   revalidatePath(`/messages/${proposalId}`)
   redirect(`/messages/${proposalId}`)
 }
 
 export async function createReview(jobId: string, revieweeId: string, formData: FormData) {
-  const { supabase, user } = await requireUser()
+  const { supabase, user, fullName } = await requireUser()
   const rating = Number(text(formData, 'rating'))
   const comment = text(formData, 'comment')
   const reviewPath = `/reviews/new?job=${encodeURIComponent(jobId)}&to=${encodeURIComponent(revieweeId)}`
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) go(reviewPath, 'error', '1 ile 5 arasında bir puan seç.')
-  const { error } = await supabase.from('reviews').insert({ job_id: jobId, reviewer_id: user.id, reviewee_id: revieweeId, rating, comment: comment || null })
+  const { data: review, error } = await supabase
+    .from('reviews')
+    .insert({ job_id: jobId, reviewer_id: user.id, reviewee_id: revieweeId, rating, comment: comment || null })
+    .select('id')
+    .single()
   if (error) go(reviewPath, 'error', messageFromError(error, 'Değerlendirme kaydedilemedi.'))
+  const { data: job } = await supabase.from('jobs').select('title').eq('id', jobId).maybeSingle()
+  await sendNotificationEmail({
+    recipientId: revieweeId,
+    preference: 'project_updates',
+    eventKey: `review-${review.id}-created`,
+    subject: 'Yeni bir değerlendirme aldın',
+    heading: `${fullName} çalışmanı değerlendirdi.`,
+    body: `${job ? `“${job.title}” projesi için ` : ''}${rating}/5 puan aldın${comment ? `: ${comment.slice(0, 240)}${comment.length > 240 ? '…' : ''}` : '.'}`,
+    ctaLabel: 'Profilini görüntüle',
+    ctaPath: `/profiles/${revieweeId}`,
+  })
   revalidatePath('/profile')
   revalidatePath(`/profiles/${revieweeId}`)
   go(reviewPath, 'message', 'Değerlendirmen yayınlandı.')

@@ -43,7 +43,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
 
           <details className="settings-accordion">
             <AccordionSummary number="01" title="Bildirimler" description="Mesaj, proje ve fırsat haberlerini yönet." status={`${enabledNotificationCount}/5 açık`} />
-            <div className="settings-accordion-body"><div className="settings-options">
+            <div className="settings-accordion-body"><p className="settings-email-note">{process.env.RESEND_API_KEY && process.env.EMAIL_FROM ? 'Etkin bildirimler, hesabındaki doğrulanmış e-posta adresine gönderilir.' : 'E-posta bildirimleri hazır. Gönderimin başlaması için yönetici tarafından e-posta servisinin bağlanması gerekiyor.'}</p><div className="settings-options">
               <Toggle name="notifyMessages" title="Yeni mesajlar" description="Bir işveren veya freelancer sana mesaj gönderdiğinde haber ver." defaultChecked={notifications.messages ?? true} />
               <Toggle name="notifyProjectUpdates" title="Proje ve teklif güncellemeleri" description={role === 'employer' ? 'İlanlarına yeni teklif geldiğinde ve iş durumu değiştiğinde bildir.' : 'Tekliflerin kabul edildiğinde veya iş durumu değiştiğinde bildir.'} defaultChecked={notifications.project_updates ?? true} />
               <Toggle name="notifyOpportunities" title={role === 'employer' ? 'Yetenek önerileri' : 'Yeni iş fırsatları'} description={role === 'employer' ? 'İlanlarınla eşleşen freelancer önerilerini al.' : 'Yeteneklerinle eşleşen yeni ilanlardan haberdar ol.'} defaultChecked={notifications.opportunities ?? true} />
