@@ -5,7 +5,7 @@ import { requireRole } from '@/lib/auth/role'
 import { JobProjectFields } from './job-project-fields'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Yeni İlan — İşlik', description: 'Yeni proje veya görev ilanı yayınla.' }
+export const metadata: Metadata = { title: 'Yeni İlan — Taskavia', description: 'Yeni proje veya görev ilanı yayınla.' }
 
 export default async function NewJobPage({ searchParams }: { searchParams: Promise<{ error?: string; message?: string }> }) {
   const params = await searchParams

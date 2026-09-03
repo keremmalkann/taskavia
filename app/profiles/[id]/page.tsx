@@ -17,13 +17,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const { id } = await params
   const supabase = await createClient()
   const { data: profile } = await supabase.from('profiles').select('full_name, title, role, company_name').eq('id', id).maybeSingle()
-  const name = profile?.company_name || profile?.full_name || 'İşlik profili'
-  const description = profile?.title ? `${name} — ${profile.title}` : `${name} İşlik profili`
+  const name = profile?.company_name || profile?.full_name || 'Taskavia profili'
+  const description = profile?.title ? `${name} — ${profile.title}` : `${name} Taskavia profili`
   return {
-    title: `${name} — İşlik`,
+    title: `${name} — Taskavia`,
     description,
-    openGraph: { title: `${name} — İşlik`, description, images: [] },
-    twitter: { card: 'summary', title: `${name} — İşlik`, description, images: [] },
+    openGraph: { title: `${name} — Taskavia`, description, images: [] },
+    twitter: { card: 'summary', title: `${name} — Taskavia`, description, images: [] },
   }
 }
 
@@ -63,7 +63,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
         </> : <>
           <div><small>ŞİRKET / KİŞİ</small><strong>{profile.company_name || profile.full_name}</strong></div>
           <div><small>YETKİLİ</small><strong>{profile.full_name}</strong></div>
-          <div><small>İŞLİK ÜYESİ</small><strong>{formatDate(profile.created_at)}</strong></div>
+          <div><small>TASKAVIA ÜYESİ</small><strong>{formatDate(profile.created_at)}</strong></div>
         </>}
       </section>
 
@@ -77,7 +77,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
           </div></section>}
         </main>
 
-        <aside className="public-reviews"><span>DEĞERLENDİRMELER</span><h2>{average ? `${average} / 5` : 'Henüz puan yok'}</h2><p>{reviews?.length ?? 0} doğrulanmış iş değerlendirmesi</p>{resumeLink?.signedUrl && <a className="public-resume-link" href={resumeLink.signedUrl} target="_blank" rel="noreferrer"><strong>PDF</strong><span>Özgeçmişi görüntüle ↗</span><small>Bağlantı 1 saat geçerlidir</small></a>}<div>{reviews?.length ? reviews.map((review, index) => { const reviewer = Array.isArray(review.reviewer) ? review.reviewer[0] : review.reviewer; return <article key={index}><strong>{'★'.repeat(review.rating)}</strong><p>{review.comment || 'Yorum bırakılmadı.'}</p><small>{reviewer?.company_name || reviewer?.full_name || 'İşlik kullanıcısı'} · {formatDate(review.created_at)}</small></article> }) : <div className="public-review-empty">İlk tamamlanan işten sonra değerlendirmeler burada görünecek.</div>}</div>{profile.portfolio_url && <a href={profile.portfolio_url} target="_blank" rel="noreferrer">Önceki portföy dosyasını aç ↗</a>}</aside>
+        <aside className="public-reviews"><span>DEĞERLENDİRMELER</span><h2>{average ? `${average} / 5` : 'Henüz puan yok'}</h2><p>{reviews?.length ?? 0} doğrulanmış iş değerlendirmesi</p>{resumeLink?.signedUrl && <a className="public-resume-link" href={resumeLink.signedUrl} target="_blank" rel="noreferrer"><strong>PDF</strong><span>Özgeçmişi görüntüle ↗</span><small>Bağlantı 1 saat geçerlidir</small></a>}<div>{reviews?.length ? reviews.map((review, index) => { const reviewer = Array.isArray(review.reviewer) ? review.reviewer[0] : review.reviewer; return <article key={index}><strong>{'★'.repeat(review.rating)}</strong><p>{review.comment || 'Yorum bırakılmadı.'}</p><small>{reviewer?.company_name || reviewer?.full_name || 'Taskavia kullanıcısı'} · {formatDate(review.created_at)}</small></article> }) : <div className="public-review-empty">İlk tamamlanan işten sonra değerlendirmeler burada görünecek.</div>}</div>{profile.portfolio_url && <a href={profile.portfolio_url} target="_blank" rel="noreferrer">Önceki portföy dosyasını aç ↗</a>}</aside>
       </div>
     </>}
   </MarketplaceShell>

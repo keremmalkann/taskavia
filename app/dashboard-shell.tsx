@@ -19,7 +19,7 @@ export function DashboardShell({ name, roleLabel, navItems, action, children }: 
     <main className="dashboard-shell">
       <ProtectedHistoryGuard />
       <aside className="dashboard-sidebar">
-        <Link className="brand dashboard-brand" href="/"><span className="brand-mark">i</span><span>işlik</span></Link>
+        <Link className="brand dashboard-brand" href="/"><span className="brand-mark">t</span><span>taskavia</span></Link>
         <nav className="dashboard-nav" aria-label="Panel menüsü">
           <p>MENÜ</p>
           {navItems.map((item) => (

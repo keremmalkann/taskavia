@@ -8,7 +8,7 @@ import { formatCurrency, formatDate } from '@/lib/marketplace'
 import { ProposalForm } from './proposal-form'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'İlan Detayı — İşlik', description: 'İlan detaylarını ve teklifleri görüntüle.' }
+export const metadata: Metadata = { title: 'İlan Detayı — Taskavia', description: 'İlan detaylarını ve teklifleri görüntüle.' }
 
 export default async function JobDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; message?: string }> }) {
   const [{ id }, feedback] = await Promise.all([params, searchParams])

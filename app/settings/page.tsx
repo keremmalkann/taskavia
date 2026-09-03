@@ -6,7 +6,7 @@ import { isAdminEmail } from '@/lib/auth/admin'
 import { requireUser } from '@/lib/auth/role'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Ayarlar — İşlik', description: 'İşlik hesap, bildirim, gizlilik ve güvenlik ayarlarını yönet.' }
+export const metadata: Metadata = { title: 'Ayarlar — Taskavia', description: 'Taskavia hesap, bildirim, gizlilik ve güvenlik ayarlarını yönet.' }
 
 type Settings = {
   notifications?: { messages?: boolean; project_updates?: boolean; opportunities?: boolean; weekly_digest?: boolean; marketing?: boolean }
@@ -48,16 +48,16 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
               <Toggle name="notifyProjectUpdates" title="Proje ve teklif güncellemeleri" description={role === 'employer' ? 'İlanlarına yeni teklif geldiğinde ve iş durumu değiştiğinde bildir.' : 'Tekliflerin kabul edildiğinde veya iş durumu değiştiğinde bildir.'} defaultChecked={notifications.project_updates ?? true} />
               <Toggle name="notifyOpportunities" title={role === 'employer' ? 'Yetenek önerileri' : 'Yeni iş fırsatları'} description={role === 'employer' ? 'İlanlarınla eşleşen freelancer önerilerini al.' : 'Yeteneklerinle eşleşen yeni ilanlardan haberdar ol.'} defaultChecked={notifications.opportunities ?? true} />
               <Toggle name="notifyWeeklyDigest" title="Haftalık özet" description="Haftanın fırsatlarını ve hesap hareketlerini tek e-postada al." defaultChecked={notifications.weekly_digest ?? true} />
-              <Toggle name="notifyMarketing" title="Ürün haberleri" description="Yeni özellikler, etkinlikler ve İşlik duyurularını al." defaultChecked={notifications.marketing ?? false} />
+              <Toggle name="notifyMarketing" title="Ürün haberleri" description="Yeni özellikler, etkinlikler ve Taskavia duyurularını al." defaultChecked={notifications.marketing ?? false} />
             </div></div>
           </details>
 
           <details className="settings-accordion">
             <AccordionSummary number="02" title="Gizlilik" description="Profilinin görünürlüğünü ve hareketlerini belirle." status={privacyStatus} />
             <div className="settings-accordion-body">
-              <label className="settings-select">Profil görünürlüğü<select name="profileVisibility" defaultValue={privacy.profile_visibility ?? 'public'}><option value="public">Herkese açık</option><option value="members">Yalnızca İşlik üyeleri</option></select><small>Profilin arama ve freelancer listelerinde kimlere gösterilsin?</small></label>
+              <label className="settings-select">Profil görünürlüğü<select name="profileVisibility" defaultValue={privacy.profile_visibility ?? 'public'}><option value="public">Herkese açık</option><option value="members">Yalnızca Taskavia üyeleri</option></select><small>Profilin arama ve freelancer listelerinde kimlere gösterilsin?</small></label>
               <div className="settings-options">
-                <Toggle name="showActivity" title="Aktiflik durumunu göster" description="Yakın zamanda aktif olduğunu diğer İşlik üyeleri görebilsin." defaultChecked={privacy.show_activity ?? true} />
+                <Toggle name="showActivity" title="Aktiflik durumunu göster" description="Yakın zamanda aktif olduğunu diğer Taskavia üyeleri görebilsin." defaultChecked={privacy.show_activity ?? true} />
                 <Toggle name="showCompletedJobs" title="Tamamlanan işleri göster" description="Tamamlanan proje sayın güven profiline dahil edilsin." defaultChecked={privacy.show_completed_jobs ?? true} />
               </div>
             </div>

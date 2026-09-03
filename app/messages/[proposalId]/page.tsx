@@ -7,7 +7,7 @@ import { requireUser } from '@/lib/auth/role'
 import { MessageThread } from './message-thread'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Çalışma Alanı — İşlik', description: 'Proje mesajlarını ve çalışma durumunu yönet.' }
+export const metadata: Metadata = { title: 'Çalışma Alanı — Taskavia', description: 'Proje mesajlarını ve çalışma durumunu yönet.' }
 
 export default async function MessagesPage({ params, searchParams }: { params: Promise<{ proposalId: string }>; searchParams: Promise<{ error?: string; message?: string }> }) {
   const [{ proposalId }, feedback] = await Promise.all([params, searchParams])

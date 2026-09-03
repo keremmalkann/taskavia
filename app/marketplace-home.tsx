@@ -38,7 +38,7 @@ export default function MarketplaceHome() {
   return (
     <main>
       <nav className="site-nav" aria-label="Ana navigasyon">
-        <Link className="brand" href="/" aria-label="İşlik ana sayfa"><span className="brand-mark" aria-hidden="true">i</span><span>işlik</span></Link>
+        <Link className="brand" href="/" aria-label="Taskavia ana sayfa"><span className="brand-mark" aria-hidden="true">t</span><span>taskavia</span></Link>
         <div className="nav-links"><a href="#projeler">İş bul</a><a href="#yetenekler">Yetenek bul</a><a href="#nasil-calisir">Nasıl çalışır?</a></div>
         <div className="nav-actions"><Link className="text-link" href="/login">Giriş yap</Link><Link className="button button-dark button-small" href="/signup">Ücretsiz katıl <span aria-hidden="true">↗</span></Link></div>
       </nav>
@@ -67,7 +67,7 @@ export default function MarketplaceHome() {
         </div>
       </section>
 
-      <section className="logo-strip" aria-label="İşlik kullanan markalar"><span>monday</span><span className="logo-serif">MAVİ</span><span>iyzico</span><span className="logo-serif">VAKKO</span><span>Getir</span><span className="logo-serif">Kolektif</span></section>
+      <section className="logo-strip" aria-label="Taskavia kullanan markalar"><span>monday</span><span className="logo-serif">MAVİ</span><span>iyzico</span><span className="logo-serif">VAKKO</span><span>Getir</span><span className="logo-serif">Kolektif</span></section>
 
       <section className="section projects-section" id="projeler">
         <div className="section-heading"><div><span className="section-kicker">FIRSATLARI KEŞFET</span><h2>Bugün başlayan işler</h2></div><p>Yeteneğine ve hedeflerine uygun, net kapsamlı projeler arasından seçimini yap.</p></div>
@@ -93,7 +93,7 @@ export default function MarketplaceHome() {
       </section>
 
       <section className="cta-section"><div className="cta-spark">✦</div><p>Sıradaki iyi iş burada başlıyor.</p><h2>Birlikte üretmeye<br />hazır mısın?</h2><div className="cta-actions"><Link href="/signup" className="button button-light">Freelancer olarak katıl <span>↗</span></Link><Link href="/signup" className="button button-outline-light">Proje yayınla <span>→</span></Link></div></section>
-      <footer><Link className="brand footer-brand" href="/"><span className="brand-mark">i</span><span>işlik</span></Link><p>İyi işlerin buluşma noktası.</p><div className="footer-links"><a href="#projeler">İşler</a><a href="#yetenekler">Yetenekler</a><a href="#nasil-calisir">Nasıl çalışır?</a><a href="mailto:merhaba@islik.co">İletişim</a></div><span className="copyright">© 2026 İşlik</span></footer>
+      <footer><Link className="brand footer-brand" href="/"><span className="brand-mark">t</span><span>taskavia</span></Link><p>İyi işlerin buluşma noktası.</p><div className="footer-links"><a href="#projeler">İşler</a><a href="#yetenekler">Yetenekler</a><a href="#nasil-calisir">Nasıl çalışır?</a><Link href="/signup">Bize katıl</Link></div><span className="copyright">© 2026 Taskavia</span></footer>
     </main>
   );
 }

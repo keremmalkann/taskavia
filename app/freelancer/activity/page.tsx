@@ -5,7 +5,7 @@ import { requireRole } from '@/lib/auth/role'
 import { formatCurrency, formatDate } from '@/lib/marketplace'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Çalışmalarım — İşlik', description: 'Tekliflerini, devam eden işlerini ve kazançlarını görüntüle.' }
+export const metadata: Metadata = { title: 'Çalışmalarım — Taskavia', description: 'Tekliflerini, devam eden işlerini ve kazançlarını görüntüle.' }
 
 type View = 'proposals' | 'jobs' | 'earnings'
 type Employer = { full_name: string | null; company_name: string | null }
@@ -65,7 +65,7 @@ export default async function FreelancerActivityPage({ searchParams }: { searchP
       {visibleProposals.map((proposal) => {
         const job = one(proposal.job)
         const employer = one(job?.employer)
-        return <article className="activity-card" key={proposal.id}><div><span>{view === 'jobs' ? 'DEVAM EDEN PROJE' : 'AKTİF TEKLİF'}</span><h2>{job?.title || 'Proje'}</h2><p>{employer?.company_name || employer?.full_name || 'İşlik işvereni'} · {proposalStatus(proposal.status)}</p></div><div className="activity-numbers"><small>TEKLİFİN</small><strong>{formatCurrency(proposal.price)}</strong><em>{proposal.duration_days} gün</em></div><div className="activity-actions"><Link href={`/jobs/${job?.id}`}>İlanı görüntüle</Link>{proposal.status === 'accepted' && <Link className="primary" href={`/messages/${proposal.id}`}>Çalışma alanına git →</Link>}</div></article>
+        return <article className="activity-card" key={proposal.id}><div><span>{view === 'jobs' ? 'DEVAM EDEN PROJE' : 'AKTİF TEKLİF'}</span><h2>{job?.title || 'Proje'}</h2><p>{employer?.company_name || employer?.full_name || 'Taskavia işvereni'} · {proposalStatus(proposal.status)}</p></div><div className="activity-numbers"><small>TEKLİFİN</small><strong>{formatCurrency(proposal.price)}</strong><em>{proposal.duration_days} gün</em></div><div className="activity-actions"><Link href={`/jobs/${job?.id}`}>İlanı görüntüle</Link>{proposal.status === 'accepted' && <Link className="primary" href={`/messages/${proposal.id}`}>Çalışma alanına git →</Link>}</div></article>
       })}
       {visibleProposals.length === 0 && <div className="marketplace-empty"><strong>{view === 'jobs' ? 'Devam eden işin yok' : 'Bekleyen teklifin yok'}</strong><p>{view === 'jobs' ? 'Kabul edilen bir proje çalışma durumundayken burada görünecek; tamamlandığında listeden kalkacak.' : 'Yeni bir ilana teklif verdiğinde değerlendirme sürecini burada izleyebilirsin.'}</p></div>}
     </section>}

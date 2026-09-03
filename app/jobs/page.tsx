@@ -5,7 +5,7 @@ import { requireRole } from '@/lib/auth/role'
 import { categories, formatCurrency, formatDate } from '@/lib/marketplace'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'İşleri Keşfet — İşlik', description: 'Açık freelancer ilanlarını ara ve filtrele.' }
+export const metadata: Metadata = { title: 'İşleri Keşfet — Taskavia', description: 'Açık freelancer ilanlarını ara ve filtrele.' }
 
 export default async function JobsPage({ searchParams }: { searchParams: Promise<{ q?: string; category?: string; minBudget?: string }> }) {
   const filters = await searchParams
@@ -44,7 +44,7 @@ export default async function JobsPage({ searchParams }: { searchParams: Promise
             <div className="job-feed-top"><span>{job.category}</span><small>{formatDate(job.created_at)}</small></div>
             <h2><Link href={`/jobs/${job.id}`}>{job.title}</Link></h2><p>{job.description}</p>
             <div className="job-skill-row">{job.skills?.map((skill: string) => <span key={skill}>{skill}</span>)}</div>
-            <footer><div><small>İŞVEREN</small><strong>{employer?.company_name || employer?.full_name || 'İşlik işvereni'}</strong></div><div><small>BÜTÇE</small><strong>{formatCurrency(job.budget_min)} – {formatCurrency(job.budget_max)}</strong></div><div><small>SON TARİH</small><strong>{formatDate(job.deadline)}</strong></div><Link href={`/jobs/${job.id}`}>İncele →</Link></footer>
+            <footer><div><small>İŞVEREN</small><strong>{employer?.company_name || employer?.full_name || 'Taskavia işvereni'}</strong></div><div><small>BÜTÇE</small><strong>{formatCurrency(job.budget_min)} – {formatCurrency(job.budget_max)}</strong></div><div><small>SON TARİH</small><strong>{formatDate(job.deadline)}</strong></div><Link href={`/jobs/${job.id}`}>İncele →</Link></footer>
           </article>
         })}
         {!error && jobs?.length === 0 && <div className="marketplace-empty"><strong>Uygun ilan bulunamadı</strong><p>Filtreleri değiştirerek yeniden deneyebilirsin.</p></div>}

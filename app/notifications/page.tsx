@@ -6,7 +6,7 @@ import { requireUser } from '@/lib/auth/role'
 import { formatNotificationTime, getNotifications } from '@/lib/notifications'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Bildirimler — İşlik', description: 'Mesaj, teklif, proje ve ödeme bildirimlerini takip et.' }
+export const metadata: Metadata = { title: 'Bildirimler — Taskavia', description: 'Mesaj, teklif, proje ve ödeme bildirimlerini takip et.' }
 
 export default async function NotificationsPage({ searchParams }: { searchParams: Promise<{ error?: string; message?: string }> }) {
   const params = await searchParams
