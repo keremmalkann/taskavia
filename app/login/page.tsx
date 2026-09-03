@@ -5,8 +5,8 @@ import { AuthFeedbackUrlCleanup } from "@/app/auth-feedback-url-cleanup";
 import { LoginHistoryGuard } from "@/app/login-history-guard";
 
 export const metadata: Metadata = {
-  title: "Giriş Yap — İşlik",
-  description: "İşlik hesabına giriş yap ve yeni fırsatlara kaldığın yerden devam et.",
+  title: "Giriş Yap — Taskavia",
+  description: "Taskavia hesabına giriş yap ve yeni fırsatlara kaldığın yerden devam et.",
 };
 
 export default async function LoginPage({
@@ -20,7 +20,7 @@ export default async function LoginPage({
     <main className="signup-shell login-shell">
       <LoginHistoryGuard />
       <aside className="signup-aside login-aside">
-        <Link className="brand" href="/"><span className="brand-mark">i</span><span>işlik</span></Link>
+        <Link className="brand" href="/"><span className="brand-mark">t</span><span>taskavia</span></Link>
         <div className="signup-quote">
           <span>YENİDEN HOŞ GELDİN</span>
           <h2>İyi işler,<br />kaldığın yerden<br />devam eder.</h2>

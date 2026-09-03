@@ -1,4 +1,4 @@
-# İşlik Supabase kurulumu
+# Taskavia Supabase kurulumu
 
 1. Supabase Dashboard → SQL Editor bölümünü açın.
 2. `migrations/20260828090000_marketplace_core.sql` ve ardından `migrations/20260831170000_private_resumes.sql` dosyalarını çalıştırın.

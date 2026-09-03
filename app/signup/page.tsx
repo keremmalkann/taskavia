@@ -7,7 +7,7 @@ export default async function SignUpPage({ searchParams }: { searchParams: Promi
   return (
     <main className="signup-shell">
       <aside className="signup-aside">
-        <Link className="brand" href="/"><span className="brand-mark">i</span><span>işlik</span></Link>
+        <Link className="brand" href="/"><span className="brand-mark">t</span><span>taskavia</span></Link>
         <div className="signup-quote"><span>İYİ İŞLER BURADA BAŞLAR</span><h2>Yeteneğini,<br />doğru insanlarla<br />buluştur.</h2><p>Binlerce bağımsız uzman ve yenilikçi ekip, iyi fikirleri birlikte gerçeğe dönüştürüyor.</p></div>
         <div className="signup-proof"><div className="mini-avatars"><span>DA</span><span>MK</span><span>EY</span></div><span>12.000+ profesyonele katıl</span></div>
       </aside>

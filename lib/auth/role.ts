@@ -29,7 +29,7 @@ export async function requireUser() {
     supabase,
     user,
     role,
-    fullName: String(profile?.full_name ?? user.user_metadata.full_name ?? user.email?.split('@')[0] ?? 'İşlik üyesi'),
+    fullName: String(profile?.full_name ?? user.user_metadata.full_name ?? user.email?.split('@')[0] ?? 'Taskavia üyesi'),
   }
 }
 

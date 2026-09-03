@@ -7,8 +7,8 @@ import { createClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Yeni Parola Belirle — İşlik",
-  description: "İşlik hesabın için yeni ve güvenli bir parola belirle.",
+  title: "Yeni Parola Belirle — Taskavia",
+  description: "Taskavia hesabın için yeni ve güvenli bir parola belirle.",
 };
 
 export default async function ResetPasswordPage({
@@ -23,7 +23,7 @@ export default async function ResetPasswordPage({
   return (
     <main className="signup-shell login-shell">
       <aside className="signup-aside login-aside">
-        <Link className="brand" href="/"><span className="brand-mark">i</span><span>işlik</span></Link>
+        <Link className="brand" href="/"><span className="brand-mark">t</span><span>taskavia</span></Link>
         <div className="signup-quote">
           <span>GÜVENLİ PAROLA</span>
           <h2>Hesabını<br />yeniden<br />güvenceye al.</h2>

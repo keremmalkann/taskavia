@@ -6,7 +6,7 @@ import { createPortfolioItem, deletePortfolioItem, deleteResume, updateProfile, 
 import { requireUser } from '@/lib/auth/role'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Profilim — İşlik', description: 'İşlik profil bilgilerini, yeteneklerini ve portföyünü yönet.' }
+export const metadata: Metadata = { title: 'Profilim — Taskavia', description: 'Taskavia profil bilgilerini, yeteneklerini ve portföyünü yönet.' }
 
 function isPortfolioImage(url: string | null) {
   return Boolean(url && /\.(?:jpe?g|png|webp)(?:\?|$)/i.test(url))

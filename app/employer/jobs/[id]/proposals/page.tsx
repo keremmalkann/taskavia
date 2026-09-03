@@ -7,7 +7,7 @@ import { requireRole } from '@/lib/auth/role'
 import { formatCurrency, formatDate } from '@/lib/marketplace'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Teklif İnceleme — İşlik', description: 'Bir ilana gelen freelancer tekliflerini incele ve değerlendir.' }
+export const metadata: Metadata = { title: 'Teklif İnceleme — Taskavia', description: 'Bir ilana gelen freelancer tekliflerini incele ve değerlendir.' }
 
 type Freelancer = {
   id: string

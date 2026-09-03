@@ -6,7 +6,7 @@ import { getMessageReads, isMessageUnread } from '@/lib/message-reads'
 import { formatNotificationTime } from '@/lib/notifications'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Mesajlar — İşlik', description: 'Aktif projelerindeki konuşmalara ulaş.' }
+export const metadata: Metadata = { title: 'Mesajlar — Taskavia', description: 'Aktif projelerindeki konuşmalara ulaş.' }
 
 type Profile = { full_name: string | null; company_name?: string | null }
 type Job = { id: string; title: string; employer: Profile | Profile[] | null }

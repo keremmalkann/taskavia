@@ -4,8 +4,8 @@ import { AuthFeedbackUrlCleanup } from "@/app/auth-feedback-url-cleanup";
 import { requestPasswordReset } from "@/lib/actions/auth";
 
 export const metadata: Metadata = {
-  title: "Parolamı Unuttum — İşlik",
-  description: "İşlik hesabın için güvenli bir parola sıfırlama bağlantısı iste.",
+  title: "Parolamı Unuttum — Taskavia",
+  description: "Taskavia hesabın için güvenli bir parola sıfırlama bağlantısı iste.",
 };
 
 export default async function ForgotPasswordPage({
@@ -18,7 +18,7 @@ export default async function ForgotPasswordPage({
   return (
     <main className="signup-shell login-shell">
       <aside className="signup-aside login-aside">
-        <Link className="brand" href="/"><span className="brand-mark">i</span><span>işlik</span></Link>
+        <Link className="brand" href="/"><span className="brand-mark">t</span><span>taskavia</span></Link>
         <div className="signup-quote">
           <span>HESABINI KURTAR</span>
           <h2>Yeni bir<br />başlangıç<br />yapalım.</h2>
