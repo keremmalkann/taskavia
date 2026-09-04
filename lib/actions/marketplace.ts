@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { requireRole, requireUser } from '@/lib/auth/role'
 import { sendNotificationEmail } from '@/lib/email-notifications'
+import { prepareITDescription } from '@/lib/it-project'
 import { getSiteUrl } from '@/lib/site-url'
 import { messageFromError, parseSkills } from '@/lib/marketplace'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -199,12 +200,14 @@ export async function deleteResume() {
 export async function createJob(formData: FormData) {
   const { supabase, user } = await requireRole('employer')
   const title = text(formData, 'title')
-  const description = text(formData, 'description')
+  const prepared = prepareITDescription(formData)
+  if (prepared.error) go('/employer/jobs/new', 'error', prepared.error)
+  const description = prepared.description!
   const category = text(formData, 'category')
   const budgetMin = Number(text(formData, 'budgetMin'))
   const budgetMax = Number(text(formData, 'budgetMax'))
 
-  if (title.length < 5 || description.length < 20 || !category || budgetMin < 0 || budgetMax < budgetMin) {
+  if (title.length < 5 || title.length > 140 || description.length < 20 || !category || !Number.isFinite(budgetMin) || !Number.isFinite(budgetMax) || budgetMin < 0 || budgetMax < budgetMin) {
     go('/employer/jobs/new', 'error', 'İlan bilgilerini ve bütçe aralığını kontrol et.')
   }
 
