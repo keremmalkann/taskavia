@@ -1,0 +1,9 @@
+.job-owner-toolbar{display:flex;justify-content:flex-end;margin:20px 0 16px}
+.job-edit-button{display:inline-flex;align-items:center;justify-content:center;gap:12px;min-height:52px;max-width:100%;box-sizing:border-box;padding:9px 18px 9px 10px;border:1px solid var(--ink);border-radius:16px;background:var(--ink);color:var(--cream);font-size:14px;font-weight:700;line-height:1.4;text-decoration:none;box-shadow:0 4px 12px #17221e12;transition:background .18s ease,box-shadow .18s ease,transform .18s ease}
+.job-edit-icon{display:grid;place-items:center;flex:none;width:32px;height:32px;border-radius:10px;background:var(--acid);color:var(--ink)}
+.job-edit-arrow{margin-left:8px;color:var(--acid);font-size:20px;transition:transform .18s ease}
+@media(hover:hover){.job-edit-button:hover{background:#293b34;box-shadow:0 6px 16px #17221e24;transform:translateY(-1px)}.job-edit-button:hover .job-edit-arrow{transform:translate(2px,-2px)}}
+.job-edit-button:focus-visible{outline:3px solid var(--coral);outline-offset:4px}
+.job-edit-button:active{transform:translateY(0);box-shadow:none}
+@media(max-width:520px){.job-owner-toolbar{margin:16px 0}.job-edit-button{width:100%}.job-edit-arrow{margin-left:auto}}
+@media(prefers-reduced-motion:reduce){.job-edit-button,.job-edit-arrow{transition:none;transform:none!important}}
