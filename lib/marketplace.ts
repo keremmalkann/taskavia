@@ -1,4 +1,4 @@
-export { categories, legacyCategories } from './it-project'
+export const categories = ['Yazılım', 'Tasarım', 'Pazarlama', 'İçerik', 'Video & Ses', 'Danışmanlık'] as const
 
 export function parseSkills(value: FormDataEntryValue | null) {
   return String(value ?? '')
