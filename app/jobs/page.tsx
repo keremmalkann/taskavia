@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { MarketplaceShell, SetupNotice } from '@/app/marketplace-shell'
 import { requireRole } from '@/lib/auth/role'
-import { categories, formatCurrency, formatDate } from '@/lib/marketplace'
+import { categories, legacyCategories, formatCurrency, formatDate } from '@/lib/marketplace'
 import { FavoriteButton } from '@/app/favorite-button'
 import { getFavorites } from '@/lib/favorites'
 
@@ -13,7 +13,7 @@ export default async function JobsPage({ searchParams }: { searchParams: Promise
   const filters = await searchParams
   const { supabase, fullName, user } = await requireRole('freelancer')
   const favoriteIds = new Set(getFavorites(user.user_metadata).map((favorite) => favorite.jobId))
-  const selectedCategory = categories.includes(filters.category as (typeof categories)[number]) ? filters.category : ''
+  const selectedCategory = [...categories, ...legacyCategories].some((item) => item === filters.category) ? filters.category : ''
   let query = supabase.from('jobs').select('*, employer:profiles!jobs_employer_id_fkey(full_name, company_name)').eq('status', 'open').order('created_at', { ascending: false })
   if (filters.q) query = query.ilike('title', `%${filters.q.slice(0, 80)}%`)
   if (selectedCategory) query = query.eq('category', selectedCategory)
@@ -22,9 +22,9 @@ export default async function JobsPage({ searchParams }: { searchParams: Promise
 
   return (
     <MarketplaceShell name={fullName} role="freelancer" active="jobs">
-      <div className="marketplace-page-head"><div><p>AÇIK İLANLAR</p><h1>{selectedCategory ? `${selectedCategory} işleri` : 'Doğru işi bul.'}</h1><span>{selectedCategory ? `${selectedCategory} kategorisindeki açık projeleri karşılaştır.` : 'Yeteneklerine, bütçene ve çalışma takvimine uyan projeleri keşfet.'}</span></div><strong>{jobs?.length ?? 0} sonuç</strong></div>
+      <div className="marketplace-page-head"><div><p>AÇIK İLANLAR</p><h1>{selectedCategory ? `${selectedCategory} işleri` : 'Uzmanlığına uygun IT işleri.'}</h1><span>{selectedCategory ? `${selectedCategory} kategorisindeki açık projeleri karşılaştır.` : 'Sistem, ağ ve güvenlik projelerini keşfet. Önceden yayınlanan ilanlara Tüm işler üzerinden ulaşabilirsin.'}</span></div><strong>{jobs?.length ?? 0} sonuç</strong></div>
       <nav className="job-category-picker" aria-label="İş kategorileri">
-        {[{ label: 'Tüm işler', value: '', icon: '✦' }, { label: 'Yazılım', value: 'Yazılım', icon: '</>' }, { label: 'Tasarım', value: 'Tasarım', icon: '◇' }, { label: 'Pazarlama', value: 'Pazarlama', icon: '↗' }, { label: 'İçerik', value: 'İçerik', icon: 'Aa' }, { label: 'Video & Ses', value: 'Video & Ses', icon: '▶' }, { label: 'Danışmanlık', value: 'Danışmanlık', icon: '◎' }].map((item) => {
+        {[{ label: 'Tüm işler', value: '', icon: '✦' }, ...categories.map((category, index) => ({ label: category, value: category, icon: String(index + 1).padStart(2, '0') })), ...(selectedCategory && legacyCategories.some((item) => item === selectedCategory) ? [{ label: selectedCategory + ' (önceki kategori)', value: selectedCategory, icon: '↶' }] : [])].map((item) => {
           const params = new URLSearchParams()
           if (item.value) params.set('category', item.value)
           if (filters.q) params.set('q', filters.q)
