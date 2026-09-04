@@ -7,6 +7,7 @@ export function MarketplaceShell({ name, role, active, children }: { name: strin
   const freelancerNav = [
     { label: 'Genel bakış', icon: '◫', href: '/freelancer', active: active === 'dashboard' },
     { label: 'İşleri keşfet', icon: '⌕', href: '/jobs', active: active === 'jobs' },
+    { label: 'Favorilerim', icon: '☆', href: '/freelancer/favorites', active: active === 'favorites' },
     { label: 'Profilim', icon: '♙', href: '/profile', active: active === 'profile' },
     { label: 'Ayarlar', icon: '⚙', href: '/settings', active: active === 'settings' },
   ]
