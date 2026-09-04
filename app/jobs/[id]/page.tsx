@@ -30,6 +30,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
     {job && <>
       {role === 'freelancer' && <div className="job-favorite-toolbar"><Link href="/freelancer/favorites">Favorilerim →</Link><FavoriteButton jobId={id} saved={getFavorites(user.user_metadata).some((favorite) => favorite.jobId === id)} title={job.title} /></div>}
       <div className="job-detail-head"><div><span>{job.category} · {job.status === 'open' ? 'Açık ilan' : job.status === 'assigned' ? 'Freelancer atandı' : job.status === 'completed' ? 'Tamamlandı' : 'Kapalı'}</span><h1>{job.title}</h1><p>{employer?.company_name || employer?.full_name} · {formatDate(job.created_at)}</p></div><div><small>BÜTÇE</small><strong>{formatCurrency(job.budget_min)} – {formatCurrency(job.budget_max)}</strong><span>Son tarih: {formatDate(job.deadline)}</span></div></div>
+      {isOwner && job.status === 'open' && <div className="job-favorite-toolbar"><Link href={`/employer/jobs/${id}/edit`}>Projeyi düzenle →</Link></div>}
       <div className="job-detail-layout">
         <article className="job-description"><h2>Proje hakkında</h2><p>{job.description}</p><h3>Aranan beceriler</h3><div className="job-skill-row">{job.skills?.map((skill: string) => <span key={skill}>{skill}</span>)}</div></article>
         <aside className="job-action-panel">
