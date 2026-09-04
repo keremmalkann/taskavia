@@ -9,6 +9,7 @@ import { ProposalForm } from './proposal-form'
 import { ProposalManager } from './proposal-manager'
 import { FavoriteButton } from '@/app/favorite-button'
 import { getFavorites } from '@/lib/favorites'
+import './job-owner-controls.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'İlan Detayı — Taskavia', description: 'İlan detaylarını ve teklifleri görüntüle.' }
@@ -30,7 +31,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
     {job && <>
       {role === 'freelancer' && <div className="job-favorite-toolbar"><Link href="/freelancer/favorites">Favorilerim →</Link><FavoriteButton jobId={id} saved={getFavorites(user.user_metadata).some((favorite) => favorite.jobId === id)} title={job.title} /></div>}
       <div className="job-detail-head"><div><span>{job.category} · {job.status === 'open' ? 'Açık ilan' : job.status === 'assigned' ? 'Freelancer atandı' : job.status === 'completed' ? 'Tamamlandı' : 'Kapalı'}</span><h1>{job.title}</h1><p>{employer?.company_name || employer?.full_name} · {formatDate(job.created_at)}</p></div><div><small>BÜTÇE</small><strong>{formatCurrency(job.budget_min)} – {formatCurrency(job.budget_max)}</strong><span>Son tarih: {formatDate(job.deadline)}</span></div></div>
-      {isOwner && job.status === 'open' && <div className="job-favorite-toolbar"><Link href={`/employer/jobs/${id}/edit`}>Projeyi düzenle →</Link></div>}
+      {isOwner && job.status === 'open' && <div className="job-owner-toolbar"><Link className="job-edit-button" href={`/employer/jobs/${id}/edit`}><span className="job-edit-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15z" /></svg></span><span>Projeyi düzenle</span><span className="job-edit-arrow" aria-hidden="true">↗</span></Link></div>}
       <div className="job-detail-layout">
         <article className="job-description"><h2>Proje hakkında</h2><p>{job.description}</p><h3>Aranan beceriler</h3><div className="job-skill-row">{job.skills?.map((skill: string) => <span key={skill}>{skill}</span>)}</div></article>
         <aside className="job-action-panel">
