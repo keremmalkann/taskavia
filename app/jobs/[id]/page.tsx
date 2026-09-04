@@ -6,6 +6,7 @@ import { completeJob } from '@/lib/actions/marketplace'
 import { requireUser } from '@/lib/auth/role'
 import { formatCurrency, formatDate } from '@/lib/marketplace'
 import { ProposalForm } from './proposal-form'
+import { ProposalManager } from './proposal-manager'
 import { FavoriteButton } from '@/app/favorite-button'
 import { getFavorites } from '@/lib/favorites'
 
@@ -33,7 +34,8 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
         <article className="job-description"><h2>Proje hakkında</h2><p>{job.description}</p><h3>Aranan beceriler</h3><div className="job-skill-row">{job.skills?.map((skill: string) => <span key={skill}>{skill}</span>)}</div></article>
         <aside className="job-action-panel">
           {role === 'freelancer' && job.status === 'open' && !ownProposal && <ProposalForm jobId={id} minimumBudget={Number(job.budget_min)} />}
-          {role === 'freelancer' && ownProposal && <div className="proposal-own"><span>TEKLİFİN</span><strong>{formatCurrency(ownProposal.price)}</strong><p>{ownProposal.duration_days} gün · {ownProposal.status === 'pending' ? 'İnceleniyor' : ownProposal.status === 'accepted' ? 'Kabul edildi' : 'Sonuçlandı'}</p>{ownProposal.status === 'accepted' && <Link href={`/messages/${ownProposal.id}`}>Mesajlaşmaya git →</Link>}</div>}
+          {role === 'freelancer' && ownProposal && <div className="proposal-own"><span>TEKLİFİN</span><strong>{formatCurrency(ownProposal.price)}</strong><p>{ownProposal.duration_days} gün · {ownProposal.status === 'pending' ? 'İnceleniyor' : ownProposal.status === 'accepted' ? 'Kabul edildi' : ownProposal.status === 'withdrawn' ? 'Geri çekildi' : 'Sonuçlandı'}</p>{ownProposal.status === 'accepted' && <Link href={`/messages/${ownProposal.id}`}>Mesajlaşmaya git →</Link>}</div>}
+          {role === 'freelancer' && ownProposal?.status === 'pending' && job.status === 'open' && <ProposalManager proposal={ownProposal} minimumBudget={Number(job.budget_min)} />}
           {isOwner && <div className="owner-job-actions"><strong>{proposals?.length ?? 0} teklif</strong><p>İlan durumu: {job.status}</p>{job.status === 'assigned' && <form action={completeJob.bind(null, id)}><button type="submit">İşi tamamlandı olarak işaretle</button></form>}{accepted && <Link href={`/messages/${accepted.id}`}>Çalışma alanını aç →</Link>}</div>}
         </aside>
       </div>

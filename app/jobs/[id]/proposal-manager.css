@@ -1,0 +1,12 @@
+.proposal-manager{margin-top:24px;border-top:1px solid #ffffff30;padding-top:20px;scroll-margin-top:24px}
+.proposal-manager .proposal-manage-buttons{display:flex;gap:8px;flex-wrap:wrap}
+.proposal-manager button{min-height:44px;padding:10px 14px;border:1px solid #ffffff60;border-radius:12px;background:transparent;color:#fff;font:inherit;font-size:14px;cursor:pointer}
+.proposal-manager button[type=submit]{background:var(--coral);border-color:var(--coral);margin:8px 8px 8px 0}
+.proposal-manager button:disabled{opacity:.55;cursor:wait}
+.proposal-manager button:focus-visible,.proposal-manager input:focus-visible,.proposal-manager textarea:focus-visible{outline:3px solid var(--acid);outline-offset:3px}
+.proposal-manager form{margin-top:20px;display:block}
+.proposal-manager h3{font-size:20px;margin:0 0 12px}
+.proposal-manager p{font-size:14px!important;line-height:1.6;color:#eee!important;overflow-wrap:anywhere}
+.proposal-manager label{display:block;margin:16px 0;font-size:14px}
+.proposal-manager input,.proposal-manager textarea{display:block;box-sizing:border-box;width:100%;min-width:0;margin-top:8px;padding:12px;border:1px solid #ccc;border-radius:10px;background:#fff;color:#17221e;font:inherit;font-size:16px}
+.proposal-manager textarea{resize:vertical}
