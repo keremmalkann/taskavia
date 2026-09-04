@@ -26,6 +26,7 @@ type Proposal = {
   message: string
   status: string
   created_at: string
+  updated_at: string
   freelancer: Freelancer | Freelancer[] | null
 }
 
@@ -50,12 +51,12 @@ export default async function ProposalComparisonPage({ params, searchParams }: {
   const { data: proposalData, error: proposalError } = job
     ? await supabase
       .from('proposals')
-      .select('id, freelancer_id, price, duration_days, message, status, created_at, freelancer:profiles!proposals_freelancer_id_fkey(id, full_name, title, skills, hourly_rate, experience_years)')
+      .select('id, freelancer_id, price, duration_days, message, status, created_at, updated_at, freelancer:profiles!proposals_freelancer_id_fkey(id, full_name, title, skills, hourly_rate, experience_years)')
       .eq('job_id', id)
       .order('created_at', { ascending: true })
     : { data: null, error: null }
 
-  const proposals = (proposalData ?? []) as Proposal[]
+  const proposals = ((proposalData ?? []) as Proposal[]).filter((proposal) => proposal.status !== 'withdrawn')
   const freelancerIds = proposals.map((proposal) => proposal.freelancer_id)
   const [{ data: reviews }, { data: portfolioItems }] = freelancerIds.length
     ? await Promise.all([
@@ -115,7 +116,7 @@ export default async function ProposalComparisonPage({ params, searchParams }: {
             <div className="comparison-message"><small>ADAYIN MESAJI</small><p>{proposal.message}</p></div>
             <footer className="comparison-card-footer">
               <div className="comparison-footer-meta"><span>{formatDate(proposal.created_at)} tarihinde gönderildi</span><Link className="comparison-profile-link" href={`/profiles/${proposal.freelancer_id}`}>Profili ve portföyü incele →</Link></div>
-              {proposal.status === 'pending' && job.status === 'open' && <div className="comparison-decision-actions" aria-label="Teklif kararı"><form action={rejectProposal.bind(null, job.id, proposal.id)}><button className="reject" type="submit">Teklifi reddet</button></form><form action={acceptProposal.bind(null, job.id, proposal.id)}><button className="accept" type="submit">Teklifi kabul et →</button></form></div>}
+              {proposal.status === 'pending' && job.status === 'open' && <div className="comparison-decision-actions" aria-label="Teklif kararı"><form action={rejectProposal.bind(null, job.id, proposal.id)}><button className="reject" type="submit">Teklifi reddet</button></form><form action={acceptProposal.bind(null, job.id, proposal.id, proposal.updated_at)}><button className="accept" type="submit">Teklifi kabul et →</button></form></div>}
               {proposal.status === 'accepted' && <Link href={`/messages/${proposal.id}`}>Mesajlaşmaya git →</Link>}
             </footer>
           </article>

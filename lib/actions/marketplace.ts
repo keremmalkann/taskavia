@@ -265,17 +265,17 @@ export async function createProposal(jobId: string, formData: FormData) {
   go(`/jobs/${jobId}`, 'message', 'Teklifin işverene gönderildi.')
 }
 
-export async function acceptProposal(jobId: string, proposalId: string) {
+export async function acceptProposal(jobId: string, proposalId: string, revision: string) {
   const { supabase } = await requireRole('employer')
-  const { error } = await supabase.rpc('accept_proposal', { target_proposal_id: proposalId })
+  const { error } = await supabase.rpc('accept_proposal_checked', { target_proposal_id: proposalId, expected_updated_at: revision })
   const comparisonPath = `/employer/jobs/${jobId}/proposals`
-  if (error) go(comparisonPath, 'error', messageFromError(error, 'Teklif kabul edilemedi.'))
+  if (error) go(comparisonPath, 'error', 'Teklif değişmiş veya geri çekilmiş olabilir. Sayfayı yenileyip tekrar incele.')
   const [{ data: job }, { data: proposals }] = await Promise.all([
     supabase.from('jobs').select('title').eq('id', jobId).single(),
     supabase.from('proposals').select('id, freelancer_id, status').eq('job_id', jobId),
   ])
   if (job) {
-    await Promise.all((proposals ?? []).map((proposal) => {
+    await Promise.all((proposals ?? []).filter((proposal) => proposal.status !== 'withdrawn').map((proposal) => {
       const accepted = proposal.id === proposalId && proposal.status === 'accepted'
       return sendNotificationEmail({
         recipientId: proposal.freelancer_id,
