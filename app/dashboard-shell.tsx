@@ -49,7 +49,7 @@ export function DashboardShell({ name, roleLabel, navItems, action, children }: 
         </header>
         {children}
       </section>
-      <nav className="mobile-dashboard-nav" aria-label="Mobil panel menüsü">
+      <nav className="mobile-dashboard-nav" style={{ gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))` }} aria-label="Mobil panel menüsü">
         {navItems.map((item) => <Link className={item.active ? 'active' : ''} href={item.href ?? '#'} key={item.label} aria-current={item.active ? 'page' : undefined}>
           <span aria-hidden="true">{item.icon}</span>
           <strong>{item.label}</strong>

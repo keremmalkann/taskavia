@@ -3,13 +3,16 @@ import Link from 'next/link'
 import { MarketplaceShell, SetupNotice } from '@/app/marketplace-shell'
 import { requireRole } from '@/lib/auth/role'
 import { categories, formatCurrency, formatDate } from '@/lib/marketplace'
+import { FavoriteButton } from '@/app/favorite-button'
+import { getFavorites } from '@/lib/favorites'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'İşleri Keşfet — Taskavia', description: 'Açık freelancer ilanlarını ara ve filtrele.' }
 
 export default async function JobsPage({ searchParams }: { searchParams: Promise<{ q?: string; category?: string; minBudget?: string }> }) {
   const filters = await searchParams
-  const { supabase, fullName } = await requireRole('freelancer')
+  const { supabase, fullName, user } = await requireRole('freelancer')
+  const favoriteIds = new Set(getFavorites(user.user_metadata).map((favorite) => favorite.jobId))
   const selectedCategory = categories.includes(filters.category as (typeof categories)[number]) ? filters.category : ''
   let query = supabase.from('jobs').select('*, employer:profiles!jobs_employer_id_fkey(full_name, company_name)').eq('status', 'open').order('created_at', { ascending: false })
   if (filters.q) query = query.ilike('title', `%${filters.q.slice(0, 80)}%`)
@@ -41,7 +44,7 @@ export default async function JobsPage({ searchParams }: { searchParams: Promise
         {jobs?.map((job) => {
           const employer = Array.isArray(job.employer) ? job.employer[0] : job.employer
           return <article className="job-feed-card" key={job.id}>
-            <div className="job-feed-top"><span>{job.category}</span><small>{formatDate(job.created_at)}</small></div>
+            <div className="job-feed-top"><span>{job.category}</span><small>{formatDate(job.created_at)}</small><FavoriteButton jobId={job.id} saved={favoriteIds.has(job.id)} title={job.title} /></div>
             <h2><Link href={`/jobs/${job.id}`}>{job.title}</Link></h2><p>{job.description}</p>
             <div className="job-skill-row">{job.skills?.map((skill: string) => <span key={skill}>{skill}</span>)}</div>
             <footer><div><small>İŞVEREN</small><strong>{employer?.company_name || employer?.full_name || 'Taskavia işvereni'}</strong></div><div><small>BÜTÇE</small><strong>{formatCurrency(job.budget_min)} – {formatCurrency(job.budget_max)}</strong></div><div><small>SON TARİH</small><strong>{formatDate(job.deadline)}</strong></div><Link href={`/jobs/${job.id}`}>İncele →</Link></footer>
