@@ -84,7 +84,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
             {resumeLink?.signedUrl && <a href={resumeLink.signedUrl} target="_blank" rel="noreferrer">Özgeçmişi görüntüle ↗</a>}
             {resumeProfile?.resume_path && <details><summary>Özgeçmişi kaldır</summary><form action={deleteResume}><p>Dosya özel depolamadan kalıcı olarak silinecek.</p><button type="submit">Silme işlemini onayla</button></form></details>}
           </article>
-          <form action={uploadResume} className="resume-upload-form" encType="multipart/form-data">
+          <form action={uploadResume} className="resume-upload-form">
             <span>{resumeProfile?.resume_path ? 'DOSYAYI DEĞİŞTİR' : 'DOSYA EKLE'}</span><h3>{resumeProfile?.resume_path ? 'Yeni özgeçmiş yükle' : 'Özgeçmişini yükle'}</h3><p>Güncel deneyim, eğitim ve iletişim bilgilerini içeren PDF dosyanı seç.</p>
             <label>Özgeçmiş PDF’i<input name="resume" type="file" accept="application/pdf,.pdf" required /><small>Yalnızca PDF · En fazla 5 MB</small></label>
             <button type="submit">{resumeProfile?.resume_path ? 'Özgeçmişi güncelle →' : 'Özgeçmişi ekle →'}</button>
@@ -95,7 +95,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       {role === 'freelancer' && <details className="profile-manager-accordion portfolio-manager">
         <ProfileAccordionSummary number="05" title="Portföy vitrini" description="En iyi çalışmalarını ekle ve sergile." status={`${portfolio?.length ?? 0} çalışma`} />
         <div className="profile-manager-accordion-body"><div className="portfolio-manager-layout">
-          <form action={createPortfolioItem} className="portfolio-upload-form" encType="multipart/form-data">
+          <form action={createPortfolioItem} className="portfolio-upload-form">
             <span>YENİ ÇALIŞMA</span>
             <h3>Portföye ekle</h3>
             <label>Çalışma başlığı<input name="title" minLength={2} maxLength={100} required placeholder="Örn. Mobil bankacılık arayüzü" /></label>
