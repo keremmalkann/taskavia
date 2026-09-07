@@ -1,9 +1,26 @@
-.job-owner-toolbar{display:flex;justify-content:flex-end;margin:20px 0 16px}
-.job-edit-button{display:inline-flex;align-items:center;justify-content:center;gap:12px;min-height:52px;max-width:100%;box-sizing:border-box;padding:9px 18px 9px 10px;border:1px solid var(--ink);border-radius:16px;background:var(--ink);color:var(--cream);font-size:14px;font-weight:700;line-height:1.4;text-decoration:none;box-shadow:0 4px 12px #17221e12;transition:background .18s ease,box-shadow .18s ease,transform .18s ease}
-.job-edit-icon{display:grid;place-items:center;flex:none;width:32px;height:32px;border-radius:10px;background:var(--acid);color:var(--ink)}
-.job-edit-arrow{margin-left:8px;color:var(--acid);font-size:20px;transition:transform .18s ease}
-@media(hover:hover){.job-edit-button:hover{background:#293b34;box-shadow:0 6px 16px #17221e24;transform:translateY(-1px)}.job-edit-button:hover .job-edit-arrow{transform:translate(2px,-2px)}}
-.job-edit-button:focus-visible{outline:3px solid var(--coral);outline-offset:4px}
-.job-edit-button:active{transform:translateY(0);box-shadow:none}
-@media(max-width:520px){.job-owner-toolbar{margin:16px 0}.job-edit-button{width:100%}.job-edit-arrow{margin-left:auto}}
-@media(prefers-reduced-motion:reduce){.job-edit-button,.job-edit-arrow{transition:none;transform:none!important}}
+.job-detail-page .job-detail-head{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(280px,.75fr);align-items:stretch;gap:14px;padding:32px 0 20px}
+.job-detail-page .job-detail-head>div:first-child{display:flex;flex-direction:column;justify-content:center;min-width:0}
+.job-detail-page .job-detail-head>div:last-child{min-width:0;padding:24px}
+.job-detail-page .job-detail-head h1{font-size:clamp(34px,4vw,52px);line-height:1.1;margin:12px 0}
+.job-detail-page .job-detail-head>div:first-child>span,.job-detail-page .job-detail-head>div:first-child>p{font-size:14px}
+.job-detail-page .job-detail-head>div:last-child small,.job-detail-page .job-detail-head>div:last-child span{font-size:13px}
+.job-detail-page .job-detail-head>div:last-child strong{font-size:26px;overflow-wrap:anywhere}
+.job-detail-page .job-description{padding:28px;min-width:0}
+.job-detail-page .job-description>p{font-size:16px;line-height:1.7}
+.job-detail-page .job-description h3{font-size:14px;margin-top:28px}
+.job-detail-page .owner-job-actions{padding:24px;gap:12px}
+.job-detail-page .owner-job-actions>strong{font-size:20px}
+.job-detail-page .owner-job-actions p{margin:0;font-size:14px;line-height:1.5}
+.job-detail-page .owner-job-actions .job-edit-button{display:flex;justify-content:space-between;align-items:center;gap:16px;min-height:46px;margin-top:8px;padding:12px 16px;border:1px solid var(--coral);border-radius:2px;background:var(--coral);color:#fff;font-size:14px;font-weight:800;text-decoration:none;box-sizing:border-box}
+.job-detail-page .job-edit-button:hover{filter:brightness(.94)}
+.job-detail-page .job-edit-button:focus-visible{outline:3px solid var(--acid);outline-offset:4px}
+.job-detail-page .proposal-section{margin-top:28px}
+.job-detail-page .proposal-section .dashboard-section-title{gap:16px;flex-wrap:wrap}
+.job-detail-page .proposal-section .dashboard-section-title a{font-size:14px}
+.job-detail-page .proposal-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:14px}
+.job-detail-page .proposal-grid>article{padding:24px;display:flex;flex-direction:column;gap:20px;min-width:0}
+.job-detail-page .proposal-person{flex-wrap:wrap}.job-detail-page .proposal-person>div{min-width:0;flex:1}.job-detail-page .proposal-person strong{font-size:16px;overflow-wrap:anywhere}.job-detail-page .proposal-person small,.job-detail-page .proposal-person em{font-size:13px}
+.job-detail-page .proposal-grid>article>p{min-height:0;margin:0;font-size:16px;line-height:1.6;overflow-wrap:anywhere}
+.job-detail-page .proposal-numbers{margin:0;padding:18px 0;border-top:1px solid var(--line);gap:32px}.job-detail-page .proposal-numbers small{font-size:12px}.job-detail-page .proposal-numbers strong{font-size:22px}
+.job-detail-page .proposal-grid>article>a{align-self:flex-start;font-size:14px;margin-top:auto;padding:8px 0}
+@media(max-width:900px){.job-detail-page .job-detail-head,.job-detail-page .job-detail-layout{grid-template-columns:1fr}.job-detail-page .job-detail-head>div:last-child{width:auto}.job-detail-page .job-description{padding:24px 20px}}
