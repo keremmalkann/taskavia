@@ -23,7 +23,7 @@ export default async function MessagesPage({ params, searchParams }: { params: P
 
   return <MarketplaceShell name={fullName} role={role} active="dashboard">
     <Feedback {...feedback} />
-    <div className="workspace-head message-page-head"><div><p>AKTİF ÇALIŞMA ALANI</p><h1>{job.title}</h1><span>{counterpart} ile güvenli proje görüşmesi</span></div><div className="message-page-links"><Link href="/messages">← Tüm mesajlar</Link><Link href={`/jobs/${job.id}`}>İlanı görüntüle →</Link></div></div>
+    <div className="workspace-head message-page-head"><div><p>AKTİF ÇALIŞMA ALANI</p><h1>{job.title}</h1><span>{counterpart} ile güvenli proje görüşmesi</span></div><div className="message-page-links"><Link href={`/messages/${proposalId}/summary`}>Çalışma özeti →</Link><Link href="/messages">← Tüm mesajlar</Link><Link href={`/jobs/${job.id}`}>İlanı görüntüle →</Link></div></div>
     <div className="workspace-layout message-workspace">
       <MessageThread
         proposalId={proposalId}
