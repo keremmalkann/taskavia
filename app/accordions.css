@@ -359,6 +359,267 @@
 @media (max-width: 700px) {
   .employer-project-table .project-table-head,
   .employer-project-table article {
-    min-width: 880px;
+    min-width: 0;
+  }
+}
+
+/* Protected application consistency layer */
+.dashboard-shell .dashboard-nav > p,
+.dashboard-shell .dashboard-heading > div:first-child > p,
+.dashboard-shell .dashboard-section-title p,
+.dashboard-shell .marketplace-page-head > div > p,
+.dashboard-shell .workspace-head > div > p,
+.dashboard-shell .comparison-head p,
+.dashboard-shell .candidate-panel > p,
+.dashboard-shell .form-section-title > span,
+.dashboard-shell .profile-form-intro > span,
+.dashboard-shell .profile-preview-label,
+.dashboard-shell .comparison-summary small,
+.dashboard-shell .comparison-skills > small,
+.dashboard-shell .comparison-message > small,
+.dashboard-shell .activity-card > div:first-child > span,
+.dashboard-shell .notifications-page-list > a > div > span {
+  font-size: .75rem;
+  line-height: 1.35;
+}
+
+.dashboard-shell .dashboard-nav a,
+.dashboard-shell .dashboard-profile strong,
+.dashboard-shell .dashboard-primary,
+.dashboard-shell .dashboard-section-title > a,
+.dashboard-shell .candidate-panel > a,
+.dashboard-shell .employer-tip > a,
+.dashboard-shell .marketplace-page-head > a,
+.dashboard-shell .workspace-head > a,
+.dashboard-shell .comparison-head > a,
+.dashboard-shell .project-proposal-link,
+.dashboard-shell .project-review-link,
+.dashboard-shell .project-reviewed,
+.dashboard-shell .marketplace-submit,
+.dashboard-shell .compact-form button,
+.dashboard-shell .owner-job-actions button,
+.dashboard-shell .payment-panel button,
+.dashboard-shell .job-filters button,
+.dashboard-shell .comparison-card form button,
+.dashboard-shell .comparison-card > footer > a,
+.dashboard-shell .comparison-profile-link,
+.dashboard-shell .activity-actions a,
+.dashboard-shell .settings-account-card > a,
+.dashboard-shell .notification-read-all,
+.dashboard-shell .notifications-page-list > a > strong {
+  font-size: .875rem;
+}
+
+.dashboard-shell .dashboard-topbar,
+.dashboard-shell .dashboard-profile small,
+.dashboard-shell .dashboard-stat > span,
+.dashboard-shell .dashboard-stat > small,
+.dashboard-shell .dashboard-date small,
+.dashboard-shell .dashboard-date span,
+.dashboard-shell .opportunity-company small,
+.dashboard-shell .opportunity-skills span,
+.dashboard-shell .candidate-tags span,
+.dashboard-shell .job-feed-top,
+.dashboard-shell .job-skill-row span,
+.dashboard-shell .job-feed-card footer small,
+.dashboard-shell .comparison-summary > div > span,
+.dashboard-shell .comparison-brief > div span,
+.dashboard-shell .comparison-status,
+.dashboard-shell .comparison-card header p,
+.dashboard-shell .comparison-price small,
+.dashboard-shell .comparison-facts dt,
+.dashboard-shell .comparison-skills span,
+.dashboard-shell .comparison-footer-meta > span,
+.dashboard-shell .conversation-copy > small,
+.dashboard-shell .conversation-meta time,
+.dashboard-shell .message-list time,
+.dashboard-shell .settings-account-card dt,
+.dashboard-shell .profile-mini-stats span {
+  font-size: .75rem;
+  line-height: 1.45;
+}
+
+.dashboard-shell .dashboard-heading > div:first-child > span,
+.dashboard-shell .marketplace-page-head > div > span,
+.dashboard-shell .workspace-head > div > span,
+.dashboard-shell .marketplace-empty p,
+.dashboard-shell .candidate-panel > span,
+.dashboard-shell .employer-tip p,
+.dashboard-shell .form-section-title p,
+.dashboard-shell .field-guidance,
+.dashboard-shell .marketplace-form > label,
+.dashboard-shell .marketplace-form .form-grid > label,
+.dashboard-shell .compact-form label,
+.dashboard-shell .job-feed-card > p,
+.dashboard-shell .job-feed-card footer strong,
+.dashboard-shell .proposal-grid > article > p,
+.dashboard-shell .comparison-message p,
+.dashboard-shell .comparison-facts dd,
+.dashboard-shell .conversation-copy > strong,
+.dashboard-shell .conversation-copy > em,
+.dashboard-shell .settings-accordion-summary p,
+.dashboard-shell .profile-accordion-summary p,
+.dashboard-shell .settings-toggle strong,
+.dashboard-shell .settings-toggle small,
+.dashboard-shell .settings-select,
+.dashboard-shell .settings-select small,
+.dashboard-shell .settings-session strong,
+.dashboard-shell .settings-session small,
+.dashboard-shell .settings-account-card > p,
+.dashboard-shell .settings-account-card dd,
+.dashboard-shell .profile-review-list article p,
+.dashboard-shell .profile-review-list > p,
+.dashboard-shell .notifications-page-list h2,
+.dashboard-shell .notifications-page-list p,
+.dashboard-shell .notifications-page-list time {
+  font-size: .875rem;
+  line-height: 1.55;
+}
+
+.dashboard-shell .settings-accordion-summary > strong,
+.dashboard-shell .profile-accordion-summary > strong,
+.dashboard-shell .activity-tab-copy small,
+.dashboard-shell .activity-tabs a > em,
+.dashboard-shell .proposal-person small,
+.dashboard-shell .proposal-person em,
+.dashboard-shell .proposal-numbers small,
+.dashboard-shell .conversation-toolbar small,
+.dashboard-shell .conversation-status,
+.dashboard-shell .message-project-summary small,
+.dashboard-shell .notification-popover-head span,
+.dashboard-shell .notification-popover-list time {
+  font-size: .75rem;
+  line-height: 1.4;
+}
+
+.dashboard-shell .settings-accordion-summary h2,
+.dashboard-shell .profile-accordion-summary h2 {
+  line-height: 1.15;
+}
+
+.dashboard-shell .activity-tab-copy strong,
+.dashboard-shell .proposal-person strong,
+.dashboard-shell .proposal-grid > article > a,
+.dashboard-shell .conversation-toolbar strong,
+.dashboard-shell .message-project-summary strong,
+.dashboard-shell .notification-popover-head button,
+.dashboard-shell .notification-popover-list strong,
+.dashboard-shell .notification-all-link {
+  font-size: .875rem;
+  line-height: 1.45;
+}
+
+.dashboard-shell .notification-popover-list small,
+.dashboard-shell .notification-popover-list > p {
+  font-size: .8125rem;
+  line-height: 1.5;
+}
+
+.dashboard-shell .project-status {
+  font-size: .75rem;
+}
+
+.dashboard-shell .marketplace-form input,
+.dashboard-shell .marketplace-form textarea,
+.dashboard-shell .marketplace-form select,
+.dashboard-shell .compact-form input,
+.dashboard-shell .compact-form textarea,
+.dashboard-shell .job-filters input,
+.dashboard-shell .job-filters select,
+.dashboard-shell .message-composer textarea,
+.dashboard-shell .settings-password-form input,
+.dashboard-shell .settings-select select,
+.dashboard-shell .portfolio-upload-form input,
+.dashboard-shell .portfolio-upload-form textarea,
+.dashboard-shell .resume-upload-form input {
+  border-radius: 10px;
+  font-size: 1rem;
+}
+
+.dashboard-shell .dashboard-stat,
+.dashboard-shell .opportunity-card,
+.dashboard-shell .job-feed-card,
+.dashboard-shell .marketplace-form,
+.dashboard-shell .profile-preview,
+.dashboard-shell .settings-card,
+.dashboard-shell .settings-account-card,
+.dashboard-shell .conversation-card,
+.dashboard-shell .comparison-summary,
+.dashboard-shell .comparison-card,
+.dashboard-shell .marketplace-empty {
+  border-radius: 12px;
+}
+
+.employer-project-table .project-cell {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.employer-project-table .project-cell > small {
+  display: none;
+}
+
+.employer-project-table .project-budget > strong {
+  font-size: .875rem;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 700px) {
+  .employer-project-table {
+    overflow: visible;
+  }
+
+  .employer-project-table .project-table-head {
+    display: none;
+  }
+
+  .employer-project-table article {
+    min-width: 0 !important;
+    padding: 18px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 18px 14px;
+  }
+
+  .employer-project-table .project-name {
+    grid-column: 1 / -1;
+  }
+
+  .employer-project-table .project-cell > small {
+    display: block;
+    color: var(--muted);
+    font-size: .75rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+  }
+
+  .employer-project-table .project-cell:nth-child(3) {
+    align-items: flex-end;
+  }
+
+  .employer-project-table .project-budget > strong {
+    font-family: var(--font-serif), serif;
+    font-size: 1.25rem;
+  }
+
+  .employer-project-table .project-actions {
+    align-self: end;
+  }
+
+  .dashboard-shell .mobile-dashboard-nav a > strong,
+  .dashboard-shell .mobile-dashboard-nav a > em {
+    font-size: .6875rem;
+  }
+
+  .dashboard-shell .dashboard-primary {
+    max-width: 150px;
+  }
+
+  .dashboard-shell .marketplace-page-head,
+  .dashboard-shell .workspace-head,
+  .dashboard-shell .comparison-head {
+    padding-bottom: 24px;
   }
 }
