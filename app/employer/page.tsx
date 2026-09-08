@@ -8,6 +8,13 @@ import { formatCurrency } from '@/lib/marketplace'
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'İşveren Paneli — Taskavia', description: 'Projelerini, adaylarını ve ödemelerini yönet.' }
 
+const jobStatusLabels: Record<string, string> = {
+  open: 'Tekliflere açık',
+  assigned: 'Devam ediyor',
+  completed: 'Tamamlandı',
+  cancelled: 'İptal edildi',
+}
+
 export default async function EmployerPage() {
   const { supabase, user, fullName } = await requireRole('employer')
   const [{ data: jobs, error: jobsError }, { data: payments }, { data: reviews }] = await Promise.all([
@@ -26,7 +33,7 @@ export default async function EmployerPage() {
     <section className="dashboard-section employer-projects"><div className="dashboard-section-title"><div><p>PROJELERİN</p><h2>İşe alım gündemi</h2></div></div>{jobsError && <SetupNotice />}<div className="project-table employer-project-table"><div className="project-table-head"><span>PROJE</span><span>TEKLİFLER</span><span>DURUM</span><span>BÜTÇE</span><span>İŞLEM</span></div>{jobs?.map((job, index) => {
       const acceptedProposal = job.proposals?.find((proposal: { status: string; freelancer_id: string }) => proposal.status === 'accepted')
       const hasReview = reviewedJobIds.has(job.id)
-      return <article key={job.id}><div className="project-name"><span className={`project-color ${index % 3 === 1 ? 'blue' : index % 3 === 2 ? 'lime' : ''}`} /><strong>{job.title}</strong></div><Link className="project-proposal-link" href={`/employer/jobs/${job.id}/proposals`}>{job.proposals?.length ?? 0} aday</Link><span className="project-status">{job.status}</span><strong>{formatCurrency(job.budget_max)}</strong><div className="project-actions">{job.status === 'completed' && acceptedProposal && (hasReview ? <span className="project-reviewed">✓ Değerlendirildi</span> : <Link className="project-review-link" href={`/reviews/new?job=${job.id}&to=${acceptedProposal.freelancer_id}`}>Freelancer’ı değerlendir</Link>)}<Link className="round-link" href={`/jobs/${job.id}`} aria-label={`${job.title} ilanını aç`}>→</Link></div></article>
+      return <article key={job.id}><div className="project-name"><span className={`project-color ${index % 3 === 1 ? 'blue' : index % 3 === 2 ? 'lime' : ''}`} /><strong>{job.title}</strong></div><div className="project-cell"><small>TEKLİFLER</small><Link className="project-proposal-link" href={`/employer/jobs/${job.id}/proposals`}>{job.proposals?.length ?? 0} aday</Link></div><div className="project-cell"><small>DURUM</small><span className="project-status">{jobStatusLabels[job.status] ?? job.status}</span></div><div className="project-cell project-budget"><small>BÜTÇE</small><strong>{formatCurrency(job.budget_max)}</strong></div><div className="project-actions">{job.status === 'completed' && acceptedProposal && (hasReview ? <span className="project-reviewed">✓ Değerlendirildi</span> : <Link className="project-review-link" href={`/reviews/new?job=${job.id}&to=${acceptedProposal.freelancer_id}`}>Freelancer’ı değerlendir</Link>)}<Link className="round-link" href={`/jobs/${job.id}`} aria-label={`${job.title} ilanını aç`}>→</Link></div></article>
     })}{!jobsError && jobs?.length === 0 && <div className="marketplace-empty"><p>Henüz projen yok. İlk ilanını yayınlayarak başla.</p></div>}</div></section>
     <section className="employer-bottom-grid"><article className="candidate-panel"><p>HIZLI BAŞLANGIÇ</p><div className="candidate-avatar">＋</div><h3>Yeni proje oluştur</h3><span>İhtiyacını anlat, teklifler aynı panelde toplansın.</span><div className="candidate-tags"><span>RLS güvenli</span><span>Teklif sistemi</span></div><Link href="/employer/jobs/new">İlan yayınla →</Link></article><article className="employer-tip"><span>✦ TASKAVIA ÖNERİSİ</span><h3>Net teslimatlar ve örnek referanslar daha iyi teklif getirir.</h3><p>Proje kapsamını, bütçe aralığını ve son tarihi açıkça yazarak doğru yeteneklerle daha hızlı eşleş.</p><Link href="/employer/jobs/new">Yeni proje oluştur →</Link></article></section>
   </MarketplaceShell>
