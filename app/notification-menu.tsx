@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
-import { markNotificationsRead } from '@/lib/actions/notifications'
+import { MarkNotificationsRead } from './mark-notifications-read'
 
 type NotificationItem = { id: string; kind: 'message' | 'proposal' | 'payment'; title: string; body: string; href: string; createdAt: string; unread: boolean }
 type NotificationFeed = { items: NotificationItem[]; unreadCount: number }
@@ -47,7 +47,7 @@ export function NotificationMenu() {
   return <details className="notification-menu" onToggle={(event) => { if (event.currentTarget.open) void loadNotifications() }}>
     <summary aria-label="Bildirimleri aç"><span aria-hidden="true">🔔</span>{feed.unreadCount > 0 && <strong>{Math.min(feed.unreadCount, 9)}{feed.unreadCount > 9 ? '+' : ''}</strong>}</summary>
     <div className="notification-popover">
-      <div className="notification-popover-head"><div><span>BİLDİRİMLER</span><h2>Son gelişmeler</h2></div>{feed.unreadCount > 0 && <form action={markNotificationsRead}><button type="submit">Tümünü okundu işaretle</button></form>}</div>
+      <div className="notification-popover-head"><div><span>BİLDİRİMLER</span><h2>Son gelişmeler</h2></div><MarkNotificationsRead unread={feed.unreadCount > 0} /></div>
       <div className="notification-popover-list">
         {loading ? <p>Bildirimler yükleniyor…</p> : feed.items.length > 0 ? feed.items.map((item) => <Link href={item.href} className={item.unread ? 'unread' : ''} key={item.id}><i className={`notification-kind ${item.kind}`} aria-hidden="true">{item.kind === 'message' ? '✉' : item.kind === 'payment' ? '₺' : '↗'}</i><span><strong>{item.title}</strong><small>{item.body}</small><time>{notificationTime(item.createdAt)}</time></span></Link>) : <p>Henüz bildirimin yok.</p>}
       </div>
