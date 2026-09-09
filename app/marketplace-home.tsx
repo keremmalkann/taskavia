@@ -5,6 +5,11 @@ import { FormEvent, useMemo, useState } from "react";
 
 type Project = { title: string; company: string; category: string; budget: string; duration: string; skills: string[]; accent: string };
 
+function getJobsHref(category: string) {
+  const marketplaceCategory = category === "Video" ? "Video & Ses" : category;
+  return `/jobs?category=${encodeURIComponent(marketplaceCategory)}`;
+}
+
 const projects: Project[] = [
   { title: "Fintech mobil uygulama arayüzü", company: "Nova Finans", category: "Tasarım", budget: "₺45.000 – ₺65.000", duration: "4–6 hafta", skills: ["Figma", "UI/UX", "Prototip"], accent: "NF" },
   { title: "Next.js e-ticaret deneyimi", company: "Mori Studio", category: "Yazılım", budget: "₺70.000 – ₺95.000", duration: "6–8 hafta", skills: ["Next.js", "TypeScript", "API"], accent: "MS" },
@@ -53,7 +58,7 @@ export default function MarketplaceHome() {
             <input id="project-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Hangi konuda desteğe ihtiyacın var?" />
             <button type="submit">Ara</button>
           </form>
-          <div className="trust-row" aria-label="Platform istatistikleri"><div><strong>12.000+</strong><span>uzman profil</span></div><div><strong>₺48M</strong><span>tamamlanan iş</span></div><div><strong>%96</strong><span>memnuniyet</span></div></div>
+          <div className="trust-row" aria-label="Taskavia çalışma avantajları"><div><strong>Net kapsam</strong><span>şeffaf proje detayları</span></div><div><strong>Tek panel</strong><span>teklif ve mesaj yönetimi</span></div><div><strong>Çift taraflı</strong><span>iş sonrası değerlendirme</span></div></div>
         </div>
         <div className="hero-visual" aria-label="Öne çıkan proje ve freelancer önizlemesi">
           <div className="visual-orbit orbit-one" /><div className="visual-orbit orbit-two" /><div className="floating-pill pill-top"><span>●</span> Yeni proje</div>
@@ -67,7 +72,7 @@ export default function MarketplaceHome() {
         </div>
       </section>
 
-      <section className="logo-strip" aria-label="Taskavia kullanan markalar"><span>monday</span><span className="logo-serif">MAVİ</span><span>iyzico</span><span className="logo-serif">VAKKO</span><span>Getir</span><span className="logo-serif">Kolektif</span></section>
+      <section className="logo-strip" aria-label="Taskavia proje alanları"><span>Yazılım</span><span className="logo-serif">TASARIM</span><span>Pazarlama</span><span className="logo-serif">İÇERİK</span><span>Video &amp; Ses</span><span className="logo-serif">DANIŞMANLIK</span></section>
 
       <section className="section projects-section" id="projeler">
         <div className="section-heading"><div><span className="section-kicker">FIRSATLARI KEŞFET</span><h2>Bugün başlayan işler</h2></div><p>Yeteneğine ve hedeflerine uygun, net kapsamlı projeler arasından seçimini yap.</p></div>
@@ -76,7 +81,7 @@ export default function MarketplaceHome() {
           <article className="project-card" key={project.title}>
             <div className="card-meta"><span>{project.category}</span><span>{index + 1}g önce</span></div><div className="company-row"><div className="company-avatar">{project.accent}</div><span>{project.company}</span></div><h3>{project.title}</h3>
             <div className="skill-list">{project.skills.map((skill) => <span key={skill}>{skill}</span>)}</div>
-            <div className="card-bottom"><div><small>Bütçe</small><strong>{project.budget}</strong></div><div><small>Süre</small><strong>{project.duration}</strong></div><button aria-label={`${project.title} detayını aç`}>→</button></div>
+            <div className="card-bottom"><div><small>Bütçe</small><strong>{project.budget}</strong></div><div><small>Süre</small><strong>{project.duration}</strong></div><Link className="project-card-link" href={getJobsHref(project.category)} aria-label={`${project.category} ilanlarını görüntüle`}>→</Link></div>
           </article>
         ))}</div>
         {filteredProjects.length === 0 && <div className="empty-state">Bu aramayla eşleşen proje bulamadık. Başka bir kelime ya da kategori dene.</div>}
