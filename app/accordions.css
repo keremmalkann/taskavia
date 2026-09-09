@@ -202,7 +202,7 @@
 
 .employer-project-table .project-table-head,
 .employer-project-table article {
-  grid-template-columns: minmax(230px, 1.8fr) .55fr .65fr .65fr minmax(175px, .85fr);
+  grid-template-columns: minmax(220px, 1fr) minmax(105px, .42fr) minmax(175px, .58fr) minmax(145px, .5fr) minmax(175px, .65fr);
 }
 
 .project-actions {
@@ -565,6 +565,143 @@
 .employer-project-table .project-budget > strong {
   font-size: .875rem;
   overflow-wrap: anywhere;
+}
+
+.dashboard-content {
+  container: dashboard-content / inline-size;
+}
+
+.dashboard-stats > *,
+.opportunity-list > *,
+.employer-bottom-grid > *,
+.profile-layout > *,
+.job-detail-layout > *,
+.workspace-layout > *,
+.settings-layout > *,
+.comparison-summary > *,
+.comparison-grid > *,
+.job-feed-card footer > *,
+.activity-card > * {
+  min-width: 0;
+}
+
+.employer-project-table article > * {
+  min-width: 0;
+}
+
+.employer-project-table .project-status {
+  max-width: 100%;
+  line-height: 1.35;
+  white-space: normal;
+}
+
+.employer-project-table .project-actions {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+@container dashboard-content (max-width: 1000px) {
+  .employer-project-table {
+    display: grid;
+    gap: 10px;
+    background: transparent;
+    overflow: visible;
+  }
+
+  .employer-project-table .project-table-head {
+    display: none;
+  }
+
+  .employer-project-table article {
+    min-width: 0 !important;
+    min-height: 0;
+    padding: 20px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 18px 22px;
+    background: var(--cream);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+
+  .employer-project-table .project-name {
+    grid-column: 1 / -1;
+  }
+
+  .employer-project-table .project-cell > small {
+    display: block;
+    color: var(--muted);
+    font-size: .75rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+  }
+
+  .employer-project-table .project-cell:nth-child(3),
+  .employer-project-table .project-actions {
+    align-items: flex-end;
+  }
+
+  .employer-project-table .project-budget > strong {
+    font-family: var(--font-serif), serif;
+    font-size: 1.25rem;
+  }
+
+  .employer-project-table .project-actions {
+    align-self: end;
+    justify-content: flex-end;
+  }
+}
+
+@container dashboard-content (max-width: 820px) {
+  .comparison-grid,
+  .proposal-grid,
+  .profile-layout,
+  .job-detail-layout,
+  .workspace-layout,
+  .settings-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .comparison-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .activity-card {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .activity-numbers,
+  .activity-actions {
+    min-width: 0;
+  }
+
+  .activity-actions {
+    align-items: stretch;
+  }
+
+  .activity-actions a {
+    text-align: center;
+  }
+}
+
+@container dashboard-content (max-width: 600px) {
+  .dashboard-stats,
+  .opportunity-list,
+  .form-grid.two,
+  .form-grid.three,
+  .settings-region-grid,
+  .settings-password-form,
+  .comparison-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .job-feed-card footer {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .job-feed-card footer > a {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 700px) {
