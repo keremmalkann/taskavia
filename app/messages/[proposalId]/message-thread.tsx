@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 
 import { createClient } from '@/lib/supabase/client'
 import { sendMessage } from '@/lib/actions/marketplace'
 import { MESSAGE_READ_EVENT } from '@/app/message-shortcut'
+import { PendingSubmitButton } from '@/app/pending-submit-button'
 
 type Message = { id: string; sender_id: string; body: string; created_at: string }
 
@@ -95,7 +96,7 @@ export function MessageThread({ proposalId, userId, currentUserName, counterpart
           }}
         />
       </div>
-      <button type="submit" aria-label="Mesajı gönder" title="Mesajı gönder"><span aria-hidden="true">➤</span></button>
+      <PendingSubmitButton iconOnly pendingLabel="Mesaj gönderiliyor" aria-label="Mesajı gönder" title="Mesajı gönder"><span aria-hidden="true">➤</span></PendingSubmitButton>
     </form>
   </div>
 }

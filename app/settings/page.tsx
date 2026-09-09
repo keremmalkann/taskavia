@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Feedback, MarketplaceShell } from '@/app/marketplace-shell'
+import { PendingSubmitButton } from '@/app/pending-submit-button'
 import { changePassword, deleteAccount, signOutEverywhere, updateSettings } from '@/lib/actions/settings'
 import { isAdminEmail } from '@/lib/auth/admin'
 import { requireUser } from '@/lib/auth/role'
@@ -72,8 +73,8 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         <details className="settings-card settings-accordion settings-security-card">
           <AccordionSummary number="04" title="Güvenlik" description="Şifreni yenile ve açık oturumlarını kontrol et." status="Şifre & oturum" />
           <div className="settings-accordion-body settings-security-body">
-            <form action={changePassword} className="settings-password-form"><label>Yeni şifre<input name="password" type="password" minLength={8} autoComplete="new-password" required placeholder="En az 8 karakter" /></label><label>Yeni şifre tekrar<input name="passwordConfirmation" type="password" minLength={8} autoComplete="new-password" required placeholder="Şifreni tekrar yaz" /></label><button type="submit">Şifreyi değiştir</button></form>
-            <div className="settings-session"><div><strong>Tüm cihazlardaki oturumlar</strong><small>Hesabının açık olduğu diğer cihazlardan güvenli şekilde çıkış yap.</small></div><form action={signOutEverywhere}><button type="submit">Tüm oturumları kapat</button></form></div>
+            <form action={changePassword} className="settings-password-form"><label>Yeni şifre<input name="password" type="password" minLength={8} autoComplete="new-password" required placeholder="En az 8 karakter" /></label><label>Yeni şifre tekrar<input name="passwordConfirmation" type="password" minLength={8} autoComplete="new-password" required placeholder="Şifreni tekrar yaz" /></label><PendingSubmitButton pendingLabel="Şifre değiştiriliyor…">Şifreyi değiştir</PendingSubmitButton></form>
+            <div className="settings-session"><div><strong>Tüm cihazlardaki oturumlar</strong><small>Hesabının açık olduğu diğer cihazlardan güvenli şekilde çıkış yap.</small></div><form action={signOutEverywhere}><PendingSubmitButton pendingLabel="Oturumlar kapatılıyor…">Tüm oturumları kapat</PendingSubmitButton></form></div>
           </div>
         </details>
         <footer className="settings-save-bar">
@@ -82,7 +83,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       </div>
 
       <aside className="settings-account-card">
-        <div className="settings-account-top"><span className="profile-preview-label">HESAP ÖZETİ</span><div className="settings-account-actions"><strong>AKTİF</strong><details className="settings-delete-menu"><summary>Hesabı sil</summary><div><strong>Hesabı kalıcı olarak sil</strong><p>Bu işlem profilini ve tüm hesap verilerini geri alınamaz şekilde kaldırır.</p><form action={deleteAccount}><label>Onaylamak için <b>HESABIMI SİL</b> yaz<input name="confirmation" type="text" autoComplete="off" required placeholder="HESABIMI SİL" /></label><button type="submit">Hesabımı sil</button></form></div></details></div></div>
+        <div className="settings-account-top"><span className="profile-preview-label">HESAP ÖZETİ</span><div className="settings-account-actions"><strong>AKTİF</strong><details className="settings-delete-menu"><summary>Hesabı sil</summary><div><strong>Hesabı kalıcı olarak sil</strong><p>Bu işlem profilini ve tüm hesap verilerini geri alınamaz şekilde kaldırır.</p><form action={deleteAccount}><label>Onaylamak için <b>HESABIMI SİL</b> yaz<input name="confirmation" type="text" autoComplete="off" required placeholder="HESABIMI SİL" /></label><PendingSubmitButton pendingLabel="Hesap siliniyor…">Hesabımı sil</PendingSubmitButton></form></div></details></div></div>
         <div className="settings-account-avatar">{fullName.slice(0, 2).toLocaleUpperCase('tr-TR')}</div>
         <h2>{fullName}</h2><p>{role === 'employer' ? 'İşveren hesabı' : 'Freelancer hesabı'}</p>
         <div className="settings-account-tags"><span>{role === 'employer' ? 'İşveren' : 'Freelancer'}</span><span>{user.email_confirmed_at ? 'E-posta doğrulandı' : 'Doğrulama bekliyor'}</span></div>

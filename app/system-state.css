@@ -276,3 +276,33 @@
   outline: 3px solid var(--coral);
   outline-offset: 3px;
 }
+
+/* Consistent feedback for every server-side form submission. */
+.pending-submit-button[data-pending="true"] {
+  cursor: wait !important;
+  opacity: .72;
+}
+
+.pending-submit-spinner {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  display: inline-block;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: pending-submit-spin .7s linear infinite;
+}
+
+.message-composer .pending-submit-spinner {
+  width: 19px;
+  height: 19px;
+}
+
+@keyframes pending-submit-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pending-submit-spinner { animation: none; }
+}

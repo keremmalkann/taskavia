@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Feedback, MarketplaceShell, SetupNotice } from '@/app/marketplace-shell'
+import { PendingSubmitButton } from '@/app/pending-submit-button'
 import { acceptProposal, rejectProposal } from '@/lib/actions/marketplace'
 import { requireRole } from '@/lib/auth/role'
 import { formatCurrency, formatDate } from '@/lib/marketplace'
@@ -116,7 +117,7 @@ export default async function ProposalComparisonPage({ params, searchParams }: {
             <div className="comparison-message"><small>ADAYIN MESAJI</small><p>{proposal.message}</p></div>
             <footer className="comparison-card-footer">
               <div className="comparison-footer-meta"><span>{formatDate(proposal.created_at)} tarihinde gönderildi</span><Link className="comparison-profile-link" href={`/profiles/${proposal.freelancer_id}`}>Profili ve portföyü incele →</Link></div>
-              {proposal.status === 'pending' && job.status === 'open' && <div className="comparison-decision-actions" aria-label="Teklif kararı"><form action={rejectProposal.bind(null, job.id, proposal.id)}><button className="reject" type="submit">Teklifi reddet</button></form><form action={acceptProposal.bind(null, job.id, proposal.id, proposal.updated_at)}><button className="accept" type="submit">Teklifi kabul et →</button></form></div>}
+              {proposal.status === 'pending' && job.status === 'open' && <div className="comparison-decision-actions" aria-label="Teklif kararı"><form action={rejectProposal.bind(null, job.id, proposal.id)}><PendingSubmitButton className="reject" pendingLabel="Reddediliyor…">Teklifi reddet</PendingSubmitButton></form><form action={acceptProposal.bind(null, job.id, proposal.id, proposal.updated_at)}><PendingSubmitButton className="accept" pendingLabel="Kabul ediliyor…">Teklifi kabul et →</PendingSubmitButton></form></div>}
               {proposal.status === 'accepted' && <Link href={`/messages/${proposal.id}`}>Mesajlaşmaya git →</Link>}
             </footer>
           </article>

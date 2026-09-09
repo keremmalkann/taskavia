@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { MarketplaceShell, Feedback } from '@/app/marketplace-shell'
+import { PendingSubmitButton } from '@/app/pending-submit-button'
 import { createReview } from '@/lib/actions/marketplace'
 import { requireUser } from '@/lib/auth/role'
 
@@ -20,6 +21,6 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
   return <MarketplaceShell name={fullName} role={role} active="dashboard">
     <div className="marketplace-page-head"><div><p>GÜVEN & İTİBAR</p><h1>Deneyimini paylaş.</h1><span>{job.title} projesindeki çalışmanı değerlendir.</span></div></div>
     <Feedback {...params} />
-    <form action={createReview.bind(null, job.id, reviewee.id)} className="marketplace-form review-form"><div className="review-person"><span>{reviewee.full_name.slice(0, 2).toLocaleUpperCase('tr-TR')}</span><div><strong>{reviewee.full_name}</strong><small>{reviewee.title || 'Taskavia üyesi'}</small></div></div><label>Puan<select name="rating" required defaultValue="5"><option value="5">★★★★★ — Mükemmel</option><option value="4">★★★★☆ — Çok iyi</option><option value="3">★★★☆☆ — İyi</option><option value="2">★★☆☆☆ — Geliştirilebilir</option><option value="1">★☆☆☆☆ — Kötü</option></select></label><label>Yorum<textarea name="comment" rows={6} maxLength={1500} placeholder="İletişim, teslimat kalitesi ve çalışma deneyimini anlat." /></label><button className="marketplace-submit" type="submit">Değerlendirmeyi yayınla →</button></form>
+    <form action={createReview.bind(null, job.id, reviewee.id)} className="marketplace-form review-form"><div className="review-person"><span>{reviewee.full_name.slice(0, 2).toLocaleUpperCase('tr-TR')}</span><div><strong>{reviewee.full_name}</strong><small>{reviewee.title || 'Taskavia üyesi'}</small></div></div><label>Puan<select name="rating" required defaultValue="5"><option value="5">★★★★★ — Mükemmel</option><option value="4">★★★★☆ — Çok iyi</option><option value="3">★★★☆☆ — İyi</option><option value="2">★★☆☆☆ — Geliştirilebilir</option><option value="1">★☆☆☆☆ — Kötü</option></select></label><label>Yorum<textarea name="comment" rows={6} maxLength={1500} placeholder="İletişim, teslimat kalitesi ve çalışma deneyimini anlat." /></label><PendingSubmitButton className="marketplace-submit" pendingLabel="Değerlendirme yayınlanıyor…">Değerlendirmeyi yayınla →</PendingSubmitButton></form>
   </MarketplaceShell>
 }
