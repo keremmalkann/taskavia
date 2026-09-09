@@ -3,6 +3,7 @@ import Link from "next/link";
 import { AuthFeedbackUrlCleanup } from "@/app/auth-feedback-url-cleanup";
 import { updatePassword } from "@/lib/actions/auth";
 import { createClient } from "@/lib/supabase/server";
+import { PendingSubmitButton } from "@/app/pending-submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -49,7 +50,7 @@ export default async function ResetPasswordPage({
                 <label htmlFor="passwordConfirmation">Yeni parola tekrar</label>
                 <input id="passwordConfirmation" name="passwordConfirmation" type="password" autoComplete="new-password" placeholder="Yeni parolanı tekrar gir" minLength={8} required />
               </div>
-              <button type="submit" className="signup-submit">Parolamı güncelle →</button>
+              <PendingSubmitButton className="signup-submit" pendingLabel="Parola güncelleniyor…">Parolamı güncelle →</PendingSubmitButton>
             </form>
           ) : (
             <div className="reset-link-expired">

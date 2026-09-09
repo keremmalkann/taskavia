@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { MarketplaceShell, Feedback } from '@/app/marketplace-shell'
+import { PendingSubmitButton } from '@/app/pending-submit-button'
 import { createJob } from '@/lib/actions/marketplace'
 import { requireRole } from '@/lib/auth/role'
 import { JobProjectFields } from './job-project-fields'
@@ -18,7 +19,7 @@ export default async function NewJobPage({ searchParams }: { searchParams: Promi
       <JobProjectFields />
       <div className="form-section-title"><span>02</span><div><h2>Bütçe & takvim</h2><p>Teklif verenlerin kapsamı doğru planlamasına yardımcı olur.</p></div></div>
       <div className="form-grid three"><label>Minimum bütçe (₺)<input name="budgetMin" type="number" min="0" required /></label><label>Maksimum bütçe (₺)<input name="budgetMax" type="number" min="0" required /></label><label>Son tarih<input name="deadline" type="date" /></label></div>
-      <button className="marketplace-submit" type="submit">İlanı yayınla →</button>
+      <PendingSubmitButton className="marketplace-submit" pendingLabel="İlan yayınlanıyor…">İlanı yayınla →</PendingSubmitButton>
     </form>
   </MarketplaceShell>
 }

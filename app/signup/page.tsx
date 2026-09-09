@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { signUp } from "@/lib/actions/auth";
 import { AuthFeedbackUrlCleanup } from "@/app/auth-feedback-url-cleanup";
+import { PendingSubmitButton } from "@/app/pending-submit-button";
 
 export default async function SignUpPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const params = await searchParams;
@@ -9,7 +10,7 @@ export default async function SignUpPage({ searchParams }: { searchParams: Promi
       <aside className="signup-aside">
         <Link className="brand" href="/"><span className="brand-mark">t</span><span>taskavia</span></Link>
         <div className="signup-quote"><span>İYİ İŞLER BURADA BAŞLAR</span><h2>Yeteneğini,<br />doğru insanlarla<br />buluştur.</h2><p>Binlerce bağımsız uzman ve yenilikçi ekip, iyi fikirleri birlikte gerçeğe dönüştürüyor.</p></div>
-        <div className="signup-proof"><div className="mini-avatars"><span>DA</span><span>MK</span><span>EY</span></div><span>12.000+ profesyonele katıl</span></div>
+        <div className="signup-proof"><div className="mini-avatars"><span>İŞ</span><span>FR</span><span>✓</span></div><span>Tekliflerini ve projelerini tek yerden yönet</span></div>
       </aside>
       <section className="signup-main"><div className="signup-form-wrap">
         <Link className="back-link" href="/">← Ana sayfaya dön</Link><h1>Aramıza katıl.</h1><p className="signup-subtitle">Ücretsiz hesabını oluştur, yeni fırsatlarla tanış.</p>
@@ -21,7 +22,7 @@ export default async function SignUpPage({ searchParams }: { searchParams: Promi
           <div className="field"><label htmlFor="password">Şifre</label><input id="password" name="password" type="password" autoComplete="new-password" placeholder="En az 6 karakter" required minLength={6} /></div>
           <span className="role-title">Nasıl katılmak istiyorsun?</span>
           <div className="role-options"><label className="role-option"><input type="radio" name="role" value="freelancer" defaultChecked /> Freelancer olarak</label><label className="role-option"><input type="radio" name="role" value="employer" /> İşveren olarak</label></div>
-          <button type="submit" className="signup-submit">Hesabımı oluştur →</button><p className="auth-switch">Zaten hesabın var mı? <Link href="/login">Giriş yap</Link></p><p className="form-note">Kaydolarak kullanım koşullarını ve gizlilik politikasını kabul etmiş olursun.</p>
+          <PendingSubmitButton className="signup-submit" pendingLabel="Hesap oluşturuluyor…">Hesabımı oluştur →</PendingSubmitButton><p className="auth-switch">Zaten hesabın var mı? <Link href="/login">Giriş yap</Link></p><p className="form-note">Kaydolarak kullanım koşullarını ve gizlilik politikasını kabul etmiş olursun.</p>
         </form>
       </div></section>
     </main>

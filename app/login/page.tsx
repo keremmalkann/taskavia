@@ -3,6 +3,7 @@ import Link from "next/link";
 import { signIn } from "@/lib/actions/auth";
 import { AuthFeedbackUrlCleanup } from "@/app/auth-feedback-url-cleanup";
 import { LoginHistoryGuard } from "@/app/login-history-guard";
+import { PendingSubmitButton } from "@/app/pending-submit-button";
 
 export const metadata: Metadata = {
   title: "Giriş Yap — Taskavia",
@@ -42,7 +43,7 @@ export default async function LoginPage({
               <div className="password-label-row"><label htmlFor="password">Şifre</label><Link href="/forgot-password">Parolamı unuttum</Link></div>
               <input id="password" name="password" type="password" autoComplete="current-password" placeholder="Şifren" required minLength={6} />
             </div>
-            <button type="submit" className="signup-submit">Giriş yap →</button>
+            <PendingSubmitButton className="signup-submit" pendingLabel="Giriş yapılıyor…">Giriş yap →</PendingSubmitButton>
             <p className="auth-switch">Henüz hesabın yok mu? <Link href="/signup">Ücretsiz kayıt ol</Link></p>
           </form>
         </div>

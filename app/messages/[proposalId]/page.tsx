@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { MarketplaceShell, Feedback } from '@/app/marketplace-shell'
+import { PendingSubmitButton } from '@/app/pending-submit-button'
 import { completeJobFromWorkspace } from '@/lib/actions/marketplace'
 import { requireUser } from '@/lib/auth/role'
 import { MessageThread } from './message-thread'
@@ -34,7 +35,7 @@ export default async function MessagesPage({ params, searchParams }: { params: P
         initialMessages={messages ?? []}
       />
       <aside className="payment-panel message-payment-panel project-completion-panel"><span>PROJE DURUMU</span><h2>{job.status === 'completed' ? 'Çalışma tamamlandı' : 'Çalışma devam ediyor'}</h2><p>{job.status === 'completed' ? 'Proje kapatıldı. Artık çalışma deneyiminizi değerlendirebilirsiniz.' : 'Teslimat ve görüşmeler tamamlandığında işveren çalışmayı kapatabilir.'}</p><div className="message-project-summary"><small>PROJE</small><strong>{job.title}</strong><small>ÇALIŞMA ARKADAŞIN</small><strong>{counterpart}</strong></div><div className="payment-status"><i className={job.status === 'completed' ? 'released' : 'funded'} />{job.status === 'completed' ? 'Çalışma tamamlandı' : 'Aktif çalışma'}</div>
-        {role === 'employer' && job.status === 'assigned' && <form action={completeJobFromWorkspace.bind(null, proposalId, job.id)}><button type="submit">Çalışmayı tamamla →</button></form>}
+        {role === 'employer' && job.status === 'assigned' && <form action={completeJobFromWorkspace.bind(null, proposalId, job.id)}><PendingSubmitButton pendingLabel="Tamamlanıyor…">Çalışmayı tamamla →</PendingSubmitButton></form>}
         {job.status === 'completed' && <Link className="review-link" href={`/reviews/new?job=${job.id}&to=${reviewee}`}>Değerlendirme bırak →</Link>}
         <small>{job.status === 'completed' ? 'Her taraf bu proje için yalnızca bir değerlendirme bırakabilir.' : role === 'employer' ? 'Bu işlem projeyi iki taraf için de tamamlandı olarak işaretler.' : 'İşveren çalışmayı tamamladığında değerlendirme alanı açılır.'}</small>
       </aside>

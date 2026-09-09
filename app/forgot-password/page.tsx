@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthFeedbackUrlCleanup } from "@/app/auth-feedback-url-cleanup";
 import { requestPasswordReset } from "@/lib/actions/auth";
+import { PendingSubmitButton } from "@/app/pending-submit-button";
 
 export const metadata: Metadata = {
   title: "Parolamı Unuttum — Taskavia",
@@ -39,7 +40,7 @@ export default async function ForgotPasswordPage({
               <label htmlFor="email">E-posta</label>
               <input id="email" name="email" type="email" autoComplete="email" placeholder="ornek@email.com" required />
             </div>
-            <button type="submit" className="signup-submit">Sıfırlama bağlantısı gönder →</button>
+            <PendingSubmitButton className="signup-submit" pendingLabel="Bağlantı gönderiliyor…">Sıfırlama bağlantısı gönder →</PendingSubmitButton>
             <p className="auth-switch">Parolanı hatırladın mı? <Link href="/login">Giriş yap</Link></p>
           </form>
         </div>

@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react'
 import { createProposal } from '@/lib/actions/marketplace'
+import { PendingSubmitButton } from '@/app/pending-submit-button'
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(value)
@@ -29,6 +30,6 @@ export function ProposalForm({ jobId, minimumBudget }: { jobId: string; minimumB
     </label>
     <label>Teslim süresi (gün)<input name="durationDays" type="number" min="1" step="1" required placeholder="Örn. 7" /></label>
     <label>Kısa mesaj<textarea name="message" minLength={10} rows={5} required /></label>
-    <button type="submit">Teklifimi gönder →</button>
+    <PendingSubmitButton pendingLabel="Teklif gönderiliyor…">Teklifimi gönder →</PendingSubmitButton>
   </form>
 }
