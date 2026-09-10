@@ -1,36 +1,87 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Taskavia
 
-## Getting Started
+Taskavia, işverenlerle freelancer'ları proje ilanları, teklifler, mesajlaşma ve çalışma takibi etrafında buluşturan bir freelance pazar yeri uygulamasıdır.
 
-First, run the development server:
+> Proje aktif geliştirme aşamasındadır. Ödeme özelliği varsayılan olarak kapalıdır ve canlı finansal işlem için hazır kabul edilmemelidir.
+
+## Özellikler
+
+- İşveren ve freelancer rollerine özel kayıt ve panel akışları
+- Kategori bazlı ilan oluşturma, arama ve filtreleme
+- Teklif gönderme, inceleme, kabul ve reddetme
+- İş durumu ve tamamlanma takibi
+- Katılımcılara özel gerçek zamanlı mesajlaşma
+- Okunmamış mesaj ve bildirim yönetimi
+- Profil, portföy ve özel erişimli özgeçmiş yükleme
+- Karşılıklı değerlendirme akışı
+- Profil gizliliği ve hesap ayarları
+- Yönetici erişimi ve temel moderasyon işlemleri
+
+## Teknoloji
+
+- Next.js 16 ve React 19
+- TypeScript
+- Supabase Auth, PostgreSQL, Storage ve Realtime
+- Vinext ve Cloudflare uyumlu üretim derlemesi
+- Node.js yerleşik test çalıştırıcısı ve ESLint
+
+## Yerel kurulum
+
+Gereksinimler:
+
+- Node.js 20.9 veya üzeri
+- Bir Supabase projesi
+
+```bash
+git clone https://github.com/keremmalkann/taskavia.git
+cd taskavia
+npm ci
+cp .env.example .env.local
+```
+
+`.env.local` içindeki en az şu değerleri kendi Supabase projenizle doldurun:
+
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
+Veritabanını hazırlamak için [Supabase kurulum adımlarını](supabase/README.md) izleyin. Ardından geliştirme sunucusunu çalıştırın:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Uygulama varsayılan olarak `http://127.0.0.1:3000` adresinde açılır.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Kullanılabilir komutlar
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run dev          # Next.js geliştirme sunucusu
+npm run lint         # ESLint kontrolü
+npm run test:unit    # Birim testleri
+npm run test:e2e     # İzole Supabase projesinde uçtan uca akış testi
+npm run build        # Vinext/Cloudflare üretim derlemesi
+npm run build:next   # Next.js üretim derlemesi
+```
 
-## Learn More
+Uçtan uca test gerçek veritabanına yazdığı için yalnızca ayrı bir test projesinde ve `supabase/README.md` içindeki güvenlik kilitleriyle çalıştırılmalıdır.
 
-To learn more about Next.js, take a look at the following resources:
+## Ortam değişkenleri ve güvenlik
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Gerçek `.env` dosyaları Git tarafından takip edilmez; yalnızca `.env.example` paylaşılır.
+- `SUPABASE_SERVICE_ROLE_KEY`, Stripe ve Resend anahtarları yalnızca sunucu ortamında tutulmalıdır.
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` istemciye açık olacak şekilde tasarlanmıştır; veri güvenliği Supabase RLS politikalarına dayanır.
+- Portföy ve özgeçmiş bucket'ları public yapılmamalıdır.
+- Yeni migration'lar sırasıyla uygulanmalı ve `supabase/verify_release.sql` sonucu tamamen `OK` olmalıdır.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Bir güvenlik açığı fark ederseniz ayrıntıları herkese açık issue olarak paylaşmayın. [Güvenlik politikası](SECURITY.md) üzerinden bildirin.
 
-## Deploy on Vercel
+## Ödeme durumu
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Stripe entegrasyonunun altyapısı geliştirme amaçlı bulunur ancak `PAYMENTS_ENABLED=false` ile kapalıdır. Hukuki, mali ve operasyonel gereksinimler tamamlanmadan canlı ödemeler etkinleştirilmemelidir.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Lisans
+
+Bu depo şu anda bir açık kaynak lisansı içermemektedir. Kaynak kodun public olarak görüntülenebilmesi; kopyalama, dağıtma veya ticari kullanım izni vermez.
