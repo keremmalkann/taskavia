@@ -1,4 +1,5 @@
 import { requireUser, type UserRole } from '@/lib/auth/role'
+import { paymentsEnabled } from '@/lib/features'
 import { formatCurrency } from '@/lib/marketplace'
 import { getMessageReads, isMessageUnread } from '@/lib/message-reads'
 
@@ -79,6 +80,16 @@ export async function getNotifications(limit = 20): Promise<NotificationFeed> {
 
   if (role === 'freelancer') proposalsQuery.eq('freelancer_id', user.id)
 
+  const paymentsQuery = paymentsEnabled
+    ? supabase
+        .from('payments')
+        .select('id, amount, status, created_at, updated_at, proposal:proposals!inner(id, job:jobs!inner(id, title))')
+        .eq(role === 'employer' ? 'employer_id' : 'freelancer_id', user.id)
+        .in('status', ['funded', 'released'])
+        .order('updated_at', { ascending: false })
+        .limit(10)
+    : Promise.resolve({ data: [], error: null })
+
   const [proposalsResult, messagesResult, paymentsResult] = await Promise.all([
     proposalsQuery,
     supabase
@@ -87,13 +98,7 @@ export async function getNotifications(limit = 20): Promise<NotificationFeed> {
       .neq('sender_id', user.id)
       .order('created_at', { ascending: false })
       .limit(20),
-    supabase
-      .from('payments')
-      .select('id, amount, status, created_at, updated_at, proposal:proposals!inner(id, job:jobs!inner(id, title))')
-      .eq(role === 'employer' ? 'employer_id' : 'freelancer_id', user.id)
-      .in('status', ['funded', 'released'])
-      .order('updated_at', { ascending: false })
-      .limit(10),
+    paymentsQuery,
   ])
 
   const items: Array<Omit<NotificationItem, 'unread'>> = []

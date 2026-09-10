@@ -20,7 +20,7 @@ export function EditJobForm({ job }: { job: { id: string; title: string; descrip
       } catch { setError('Bağlantı kurulamadı. Bilgilerin burada duruyor; tekrar deneyebilirsin.') }
     })
   }}>
-    <p>Başlığı ve açıklamayı güncelleyebilirsin. Mevcut teklifleri korumak için bütçe, kategori ve takvim bu ekranda değiştirilmez.</p>
+    <p>Başlığı ve açıklamayı güncelleyebilirsin. Bütçe, kategori ve takvim bu ekranda değiştirilmez; her kayıt düzenleme geçmişine işlenir.</p>
     {error && <p role="alert">{error}</p>}
     <label>İlan başlığı<input name="title" defaultValue={job.title} minLength={5} maxLength={140} required disabled={pending} /></label>
     <label>Proje açıklaması<textarea name="description" defaultValue={job.description} minLength={20} maxLength={5000} rows={12} required disabled={pending} /></label>

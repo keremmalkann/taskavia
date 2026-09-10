@@ -9,7 +9,7 @@ export default async function SignUpPage({ searchParams }: { searchParams: Promi
     <main className="signup-shell">
       <aside className="signup-aside">
         <Link className="brand" href="/"><span className="brand-mark">t</span><span>taskavia</span></Link>
-        <div className="signup-quote"><span>İYİ İŞLER BURADA BAŞLAR</span><h2>Yeteneğini,<br />doğru insanlarla<br />buluştur.</h2><p>Binlerce bağımsız uzman ve yenilikçi ekip, iyi fikirleri birlikte gerçeğe dönüştürüyor.</p></div>
+        <div className="signup-quote"><span>İYİ İŞLER BURADA BAŞLAR</span><h2>Yeteneğini,<br />doğru insanlarla<br />buluştur.</h2><p>Bağımsız uzmanlar ve yenilikçi ekipler, iyi fikirleri birlikte gerçeğe dönüştürüyor.</p></div>
         <div className="signup-proof"><div className="mini-avatars"><span>İŞ</span><span>FR</span><span>✓</span></div><span>Tekliflerini ve projelerini tek yerden yönet</span></div>
       </aside>
       <section className="signup-main"><div className="signup-form-wrap">
@@ -22,7 +22,8 @@ export default async function SignUpPage({ searchParams }: { searchParams: Promi
           <div className="field"><label htmlFor="password">Şifre</label><input id="password" name="password" type="password" autoComplete="new-password" placeholder="En az 6 karakter" required minLength={6} /></div>
           <span className="role-title">Nasıl katılmak istiyorsun?</span>
           <div className="role-options"><label className="role-option"><input type="radio" name="role" value="freelancer" defaultChecked /> Freelancer olarak</label><label className="role-option"><input type="radio" name="role" value="employer" /> İşveren olarak</label></div>
-          <PendingSubmitButton className="signup-submit" pendingLabel="Hesap oluşturuluyor…">Hesabımı oluştur →</PendingSubmitButton><p className="auth-switch">Zaten hesabın var mı? <Link href="/login">Giriş yap</Link></p><p className="form-note">Kaydolarak kullanım koşullarını ve gizlilik politikasını kabul etmiş olursun.</p>
+          <label className="signup-consent"><input type="checkbox" name="termsAccepted" value="accepted" required /><span><Link href="/terms" target="_blank">Kullanım koşullarını</Link> ve <Link href="/privacy" target="_blank">KVKK aydınlatma metnini</Link> okudum.</span></label>
+          <PendingSubmitButton className="signup-submit" pendingLabel="Hesap oluşturuluyor…">Hesabımı oluştur →</PendingSubmitButton><p className="auth-switch">Zaten hesabın var mı? <Link href="/login">Giriş yap</Link></p>
         </form>
       </div></section>
     </main>

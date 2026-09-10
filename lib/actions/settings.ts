@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { requireUser } from '@/lib/auth/role'
+import { portfolioStoragePath } from '@/lib/portfolio-files'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 function go(kind: 'error' | 'message', message: string): never {
@@ -40,6 +41,13 @@ export async function updateSettings(formData: FormData) {
     timezone: 'Europe/Istanbul',
   }
 
+  const { error: profileError } = await supabase.from('profiles').update({
+    profile_visibility: profileVisibility,
+    show_activity: settings.privacy.show_activity,
+    show_completed_jobs: settings.privacy.show_completed_jobs,
+  }).eq('id', user.id)
+  if (profileError) go('error', 'Gizlilik ayarları kaydedilemedi. Supabase migration kurulumunu kontrol et.')
+
   const { error } = await supabase.auth.updateUser({ data: { settings } })
   if (error) go('error', 'Ayarların kaydedilemedi. Lütfen tekrar dene.')
 
@@ -66,13 +74,6 @@ export async function signOutEverywhere() {
   const { error } = await supabase.auth.signOut({ scope: 'global' })
   if (error) go('error', 'Oturumlar kapatılamadı. Lütfen tekrar dene.')
   redirect('/login?message=' + encodeURIComponent('Tüm cihazlardaki oturumların kapatıldı.'))
-}
-
-function portfolioStoragePath(url: string | null) {
-  if (!url) return null
-  const marker = '/storage/v1/object/public/portfolios/'
-  const index = url.indexOf(marker)
-  return index === -1 ? null : decodeURIComponent(url.slice(index + marker.length))
 }
 
 export async function deleteAccount(formData: FormData) {

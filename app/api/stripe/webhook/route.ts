@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { paymentsEnabled } from '@/lib/features'
 
 function safeEqual(a: string, b: string) {
   if (a.length !== b.length) return false
@@ -21,6 +22,8 @@ async function verifyStripeSignature(payload: string, signatureHeader: string, s
 }
 
 export async function POST(request: Request) {
+  if (!paymentsEnabled) return new Response('Not found', { status: 404 })
+
   const secret = process.env.STRIPE_WEBHOOK_SECRET
   const signature = request.headers.get('stripe-signature')
   const admin = createAdminClient()

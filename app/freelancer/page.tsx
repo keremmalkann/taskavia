@@ -6,9 +6,10 @@ import { requireRole } from '@/lib/auth/role'
 import { categories, formatCurrency, formatDate } from '@/lib/marketplace'
 import { FavoriteButton } from '@/app/favorite-button'
 import { getFavorites } from '@/lib/favorites'
+import { paymentsEnabled } from '@/lib/features'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Freelancer Paneli — Taskavia', description: 'Tekliflerini, projelerini ve kazançlarını yönet.' }
+export const metadata: Metadata = { title: 'Freelancer Paneli — Taskavia', description: 'Tekliflerini ve projelerini tek yerden yönet.' }
 
 export default async function FreelancerPage({ searchParams }: { searchParams: Promise<{ category?: string }> }) {
   const [{ category }, { supabase, user, fullName }] = await Promise.all([searchParams, requireRole('freelancer')])
@@ -16,21 +17,32 @@ export default async function FreelancerPage({ searchParams }: { searchParams: P
   const favoriteIds = new Set(getFavorites(user.user_metadata).map((favorite) => favorite.jobId))
   let jobsQuery = supabase.from('jobs').select('*, employer:profiles!jobs_employer_id_fkey(full_name, company_name)').eq('status', 'open').order('created_at', { ascending: false })
   if (selectedCategory) jobsQuery = jobsQuery.eq('category', selectedCategory)
-  const [{ data: jobs, error: jobsError }, { data: proposals }, { data: payments }] = await Promise.all([
-    jobsQuery.limit(3),
+  const paymentQuery = paymentsEnabled
+    ? supabase.from('payments').select('amount, platform_fee, status').eq('freelancer_id', user.id)
+    : Promise.resolve({ data: [], error: null })
+  const [{ data: latestJobs, error: jobsError }, { data: proposals }, { data: payments }, { data: freelancerProfile }] = await Promise.all([
+    jobsQuery.limit(18),
     supabase.from('proposals').select('id, status, job_id, price, job:jobs!inner(status)').eq('freelancer_id', user.id),
-    supabase.from('payments').select('amount, platform_fee, status').eq('freelancer_id', user.id),
+    paymentQuery,
+    supabase.from('profiles').select('skills').eq('id', user.id).maybeSingle(),
   ])
+  const profileSkills = (freelancerProfile?.skills ?? []).map((skill: string) => skill.toLocaleLowerCase('tr-TR'))
+  const matchCount = (skills: string[] | null) => (skills ?? []).filter((skill) => profileSkills.includes(skill.toLocaleLowerCase('tr-TR'))).length
+  const jobs = [...(latestJobs ?? [])].sort((first, second) => matchCount(second.skills) - matchCount(first.skills)).slice(0, 3)
   const active = proposals?.filter((proposal) => {
     const job = Array.isArray(proposal.job) ? proposal.job[0] : proposal.job
     return proposal.status === 'accepted' && job?.status === 'assigned'
   }).length ?? 0
   const pending = proposals?.filter((proposal) => proposal.status === 'pending').length ?? 0
+  const completed = proposals?.filter((proposal) => {
+    const job = Array.isArray(proposal.job) ? proposal.job[0] : proposal.job
+    return proposal.status === 'accepted' && job?.status === 'completed'
+  }).length ?? 0
   const earnings = payments?.filter((payment) => payment.status === 'released').reduce((sum, payment) => sum + Number(payment.amount) - Number(payment.platform_fee), 0) ?? 0
 
   return <MarketplaceShell name={fullName} role="freelancer" active="dashboard">
     <div className="dashboard-heading"><div><p>FREELANCER PANELİ</p><h1>Günaydın, {fullName.split(' ')[0]}.</h1><span>Yeni fırsatları keşfet, tekliflerini ve aktif işlerini tek yerden yönet.</span></div><DashboardDate /></div>
-    <section className="dashboard-stats"><StatCard label="AKTİF TEKLİFLER" value={String(pending)} note={`${proposals?.length ?? 0} toplam teklif`} href="/freelancer/activity?view=proposals" /><StatCard label="DEVAM EDEN İŞLER" value={String(active)} note="Kabul edilmiş projeler" tone="lime" href="/freelancer/activity?view=jobs" /><StatCard label="TOPLAM KAZANÇ" value={formatCurrency(earnings)} note="Serbest bırakılan ödemeler" tone="dark" href="/freelancer/activity?view=earnings" /></section>
-    <section className="dashboard-section" id="opportunities"><div className="dashboard-section-title"><div><p>YENİ FIRSATLAR</p><h2>{selectedCategory ? `${selectedCategory} projeleri` : 'Sana açık projeler'}</h2></div><Link href="/jobs">Tümünü gör →</Link></div><nav className="dashboard-category-links" aria-label="Sana açık projeleri kategoriye göre filtrele"><Link className={!selectedCategory ? 'active' : ''} href="/freelancer#opportunities">Tümü</Link>{categories.map((item) => <Link className={selectedCategory === item ? 'active' : ''} href={`/freelancer?category=${encodeURIComponent(item)}#opportunities`} key={item}>{item}</Link>)}</nav>{jobsError && <SetupNotice />}<div className="opportunity-list">{jobs?.map((job) => { const employer = Array.isArray(job.employer) ? job.employer[0] : job.employer; return <article className="opportunity-card" key={job.id}><div className="opportunity-company"><span>{(employer?.company_name || employer?.full_name || 'İŞ').slice(0,2).toLocaleUpperCase('tr-TR')}</span><div><strong>{employer?.company_name || employer?.full_name || 'Taskavia işvereni'}</strong><small>{formatDate(job.created_at)}</small></div></div><div className="favorite-card-top"><div className="opportunity-category">{job.category}</div><FavoriteButton jobId={job.id} saved={favoriteIds.has(job.id)} title={job.title} /></div><h3>{job.title}</h3><div className="opportunity-skills">{job.skills?.map((skill: string) => <span key={skill}>{skill}</span>)}</div><footer><div><small>BÜTÇE</small><strong>{formatCurrency(job.budget_min)} – {formatCurrency(job.budget_max)}</strong></div><Link className="round-link" href={`/jobs/${job.id}`}>→</Link></footer></article>})}{!jobsError && jobs?.length === 0 && <div className="marketplace-empty"><p>{selectedCategory ? `${selectedCategory} kategorisinde açık ilan bulunmuyor.` : 'Henüz açık ilan yok.'}</p></div>}</div></section>
+    <section className="dashboard-stats"><StatCard label="AKTİF TEKLİFLER" value={String(pending)} note={`${proposals?.length ?? 0} toplam teklif`} href="/freelancer/activity?view=proposals" /><StatCard label="DEVAM EDEN İŞLER" value={String(active)} note="Kabul edilmiş projeler" tone="lime" href="/freelancer/activity?view=jobs" />{paymentsEnabled ? <StatCard label="TOPLAM KAZANÇ" value={formatCurrency(earnings)} note="Serbest bırakılan ödemeler" tone="dark" href="/freelancer/activity?view=earnings" /> : <StatCard label="TAMAMLANAN İŞLER" value={String(completed)} note="Başarıyla kapatılan projeler" tone="dark" href="/freelancer/activity?view=completed" />}</section>
+    <section className="dashboard-section" id="opportunities"><div className="dashboard-section-title"><div><p>YENİ FIRSATLAR</p><h2>{selectedCategory ? `${selectedCategory} projeleri` : 'Sana açık projeler'}</h2></div><Link href="/jobs">Tümünü gör →</Link></div><nav className="dashboard-category-links" aria-label="Sana açık projeleri kategoriye göre filtrele"><Link className={!selectedCategory ? 'active' : ''} href="/freelancer#opportunities">Tümü</Link>{categories.map((item) => <Link className={selectedCategory === item ? 'active' : ''} href={`/freelancer?category=${encodeURIComponent(item)}#opportunities`} key={item}>{item}</Link>)}</nav>{jobsError && <SetupNotice />}<div className="opportunity-list">{jobs.map((job) => { const employer = Array.isArray(job.employer) ? job.employer[0] : job.employer; const matchingSkills = matchCount(job.skills); return <article className="opportunity-card" key={job.id}><div className="opportunity-company"><span>{(employer?.company_name || employer?.full_name || 'İŞ').slice(0,2).toLocaleUpperCase('tr-TR')}</span><div><strong>{employer?.company_name || employer?.full_name || 'Taskavia işvereni'}</strong><small>{formatDate(job.created_at)}</small></div>{matchingSkills > 0 && <em>{matchingSkills} beceri eşleşti</em>}</div><div className="favorite-card-top"><div className="opportunity-category">{job.category}</div><FavoriteButton jobId={job.id} saved={favoriteIds.has(job.id)} title={job.title} /></div><h3>{job.title}</h3><div className="opportunity-skills">{job.skills?.map((skill: string) => <span className={profileSkills.includes(skill.toLocaleLowerCase('tr-TR')) ? 'matched' : ''} key={skill}>{skill}</span>)}</div><footer><div><small>BÜTÇE</small><strong>{formatCurrency(job.budget_min)} – {formatCurrency(job.budget_max)}</strong></div><Link className="round-link" href={`/jobs/${job.id}`}>→</Link></footer></article>})}{!jobsError && jobs.length === 0 && <div className="marketplace-empty"><p>{selectedCategory ? `${selectedCategory} kategorisinde açık ilan bulunmuyor.` : 'Henüz açık ilan yok.'}</p></div>}</div></section>
   </MarketplaceShell>
 }
