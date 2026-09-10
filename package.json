@@ -39,7 +39,7 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vite": "^8.2.2",
-    "wrangler": "^4.127.0"
+    "wrangler": "^4.129.0"
   },
   "overrides": {
     "js-yaml": "4.3.2",
