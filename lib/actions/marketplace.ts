@@ -4,8 +4,10 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { requireRole, requireUser } from '@/lib/auth/role'
 import { sendNotificationEmail } from '@/lib/email-notifications'
+import { paymentsEnabled } from '@/lib/features'
 import { getSiteUrl } from '@/lib/site-url'
 import { messageFromError, parseSkills } from '@/lib/marketplace'
+import { portfolioStoragePath } from '@/lib/portfolio-files'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 function text(formData: FormData, key: string) {
@@ -22,13 +24,6 @@ const portfolioTypes: Record<string, string> = {
   'image/png': 'png',
   'image/webp': 'webp',
   'application/pdf': 'pdf',
-}
-
-function storagePathFromPublicUrl(url: string) {
-  const marker = '/storage/v1/object/public/portfolios/'
-  const markerIndex = url.indexOf(marker)
-  if (markerIndex === -1) return null
-  return decodeURIComponent(url.slice(markerIndex + marker.length))
 }
 
 async function sendJobCompletedEmail(proposalId: string, freelancerId: string, jobTitle: string) {
@@ -83,8 +78,8 @@ export async function updateProfile(formData: FormData) {
     skills: parseSkills(formData.get('skills')),
     hourly_rate: role === 'freelancer' ? hourlyRate : null,
     experience_years: role === 'freelancer' ? experienceYears : null,
-    stripe_account_id: role === 'freelancer' && stripeAccountId.startsWith('acct_') ? stripeAccountId : null,
   }
+  if (paymentsEnabled) payload.stripe_account_id = role === 'freelancer' && stripeAccountId.startsWith('acct_') ? stripeAccountId : null
   if (portfolioUrl) payload.portfolio_url = portfolioUrl
 
   const { error } = await supabase.from('profiles').upsert(payload)
@@ -141,7 +136,7 @@ export async function deletePortfolioItem(itemId: string) {
 
   if (findError || !item) go('/profile', 'error', 'Portföy çalışması bulunamadı.')
 
-  const storagePath = item.file_url ? storagePathFromPublicUrl(item.file_url) : null
+  const storagePath = portfolioStoragePath(item.file_url)
   if (storagePath) {
     const { error: storageError } = await supabase.storage.from('portfolios').remove([storagePath])
     if (storageError) go('/profile', 'error', 'Portföy dosyası silinemedi. Lütfen yeniden dene.')
@@ -198,30 +193,170 @@ export async function deleteResume() {
 
 export async function createJob(formData: FormData) {
   const { supabase, user } = await requireRole('employer')
+  const asDraft = text(formData, 'intent') === 'draft'
   const title = text(formData, 'title')
   const description = text(formData, 'description')
   const category = text(formData, 'category')
   const budgetMin = Number(text(formData, 'budgetMin'))
   const budgetMax = Number(text(formData, 'budgetMax'))
 
-  if (title.length < 5 || description.length < 20 || !category || budgetMin < 0 || budgetMax < budgetMin) {
+  if (title.length < 5 || title.length > 140 || description.length < 20 || description.length > 5000 || !category) {
+    go('/employer/jobs/new', 'error', 'Başlık 5–140, açıklama 20–5000 karakter olmalı.')
+  }
+  if (!Number.isFinite(budgetMin) || !Number.isFinite(budgetMax) || budgetMin < 0 || budgetMax < budgetMin) {
     go('/employer/jobs/new', 'error', 'İlan bilgilerini ve bütçe aralığını kontrol et.')
+  }
+  const deadline = text(formData, 'deadline') || null
+  if (deadline && deadline < new Date().toISOString().slice(0, 10)) {
+    go('/employer/jobs/new', 'error', 'Son tarih geçmiş bir gün olamaz. Bugün veya sonrası bir tarih seç.')
   }
 
   const { data, error } = await supabase.from('jobs').insert({
     employer_id: user.id,
+    status: asDraft ? 'draft' : 'open',
     title,
     description,
     category,
     skills: parseSkills(formData.get('skills')),
     budget_min: budgetMin,
     budget_max: budgetMax,
-    deadline: text(formData, 'deadline') || null,
+    deadline,
   }).select('id').single()
 
-  if (error) go('/employer/jobs/new', 'error', messageFromError(error, 'İlan yayınlanamadı.'))
+  if (error) go('/employer/jobs/new', 'error', messageFromError(error, asDraft ? 'Taslak kaydedilemedi.' : 'İlan yayınlanamadı.'))
   revalidatePath('/employer')
-  redirect(`/jobs/${data.id}?message=${encodeURIComponent('İlanın yayında. Teklifleri bu sayfadan takip edebilirsin.')}`)
+  redirect(asDraft
+    ? `/jobs/${data.id}?message=${encodeURIComponent('Taslak kaydedildi. Yayınlamaya hazır olduğunda bu sayfadan yayınlayabilirsin.')}`
+    : `/jobs/${data.id}?message=${encodeURIComponent('İlanın yayında. Teklifleri bu sayfadan takip edebilirsin.')}`)
+}
+
+export async function publishJob(id: string, revision: string) {
+  const { supabase } = await requireRole('employer')
+  const { error } = await supabase.rpc('publish_job', { target_job_id: id, expected_updated_at: revision })
+  if (error) go(`/jobs/${id}`, 'error', 'İlan yayınlanamadı. Taslak değişmiş olabilir; sayfayı yenileyip tekrar dene.')
+  for (const path of ['/employer', '/jobs', '/freelancer', '/freelancer/activity']) revalidatePath(path)
+  revalidatePath(`/jobs/${id}`)
+  go(`/jobs/${id}`, 'message', 'İlanın yayında. Teklifleri bu sayfadan takip edebilirsin.')
+}
+
+export async function closeJob(id: string, revision: string) {
+  const { supabase, user } = await requireRole('employer')
+  const { data: job } = await supabase
+    .from('jobs')
+    .select('id, title, updated_at')
+    .eq('id', id)
+    .eq('employer_id', user.id)
+    .eq('status', 'open')
+    .maybeSingle()
+
+  const { data: pendingProposals } = job
+    ? await supabase.from('proposals').select('id, freelancer_id').eq('job_id', id).eq('status', 'pending')
+    : { data: null }
+
+  const { error } = await supabase.rpc('close_job', { target_job_id: id, expected_updated_at: job?.updated_at ?? revision })
+  if (error || !job) go(`/jobs/${id}`, 'error', 'İlan kapatılamadı. Durum değişmiş olabilir; sayfayı yenileyip tekrar dene.')
+
+  for (const proposal of pendingProposals ?? []) {
+    await sendNotificationEmail({
+      recipientId: proposal.freelancer_id,
+      preference: 'project_updates',
+      eventKey: `proposal-${proposal.id}-jobclosed`,
+      subject: `İlan kapatıldı: ${job.title}`,
+      heading: 'İlan tekliflere kapatıldı.',
+      body: `"${job.title}" ilanı işveren tarafından tekliflere kapatıldığı için bekleyen teklifin sonlandırıldı. Benzer yeni işleri keşfetmeye devam edebilirsin.`,
+      ctaLabel: 'Yeni işleri keşfet',
+      ctaPath: '/jobs',
+    })
+  }
+
+  for (const path of ['/employer', '/jobs', '/freelancer', '/freelancer/activity']) revalidatePath(path)
+  revalidatePath(`/jobs/${id}`)
+  revalidatePath(`/employer/jobs/${id}/proposals`)
+  go(`/jobs/${id}`, 'message', 'İlan tekliflere kapatıldı. Bekleyen teklifler reddedildi.')
+}
+
+export async function reopenJob(id: string, revision: string) {
+  const { supabase } = await requireRole('employer')
+  const { error } = await supabase.rpc('reopen_job', { target_job_id: id, expected_updated_at: revision })
+  if (error) go(`/jobs/${id}`, 'error', 'İlan yeniden yayınlanamadı. Durum değişmiş olabilir; sayfayı yenileyip tekrar dene.')
+  for (const path of ['/employer', '/jobs', '/freelancer', '/freelancer/activity']) revalidatePath(path)
+  revalidatePath(`/jobs/${id}`)
+  go(`/jobs/${id}`, 'message', 'İlanın yeniden tekliflere açık.')
+}
+
+export async function archiveJob(id: string, revision: string) {
+  const { supabase, user } = await requireRole('employer')
+  const { data: job } = await supabase
+    .from('jobs')
+    .select('id, title, updated_at')
+    .eq('id', id)
+    .eq('employer_id', user.id)
+    .in('status', ['open', 'closed'])
+    .maybeSingle()
+
+  const { data: pendingProposals } = job
+    ? await supabase.from('proposals').select('id, freelancer_id').eq('job_id', id).eq('status', 'pending')
+    : { data: null }
+
+  const { error } = await supabase.rpc('archive_job', {
+    target_job_id: id,
+    expected_updated_at: job?.updated_at ?? revision,
+  })
+  if (error || !job) go(`/jobs/${id}`, 'error', 'İlan arşivlenemedi. Durum değişmiş olabilir; sayfayı yenileyip tekrar dene.')
+
+  await Promise.all((pendingProposals ?? []).map((proposal) => sendNotificationEmail({
+    recipientId: proposal.freelancer_id,
+    preference: 'project_updates',
+    eventKey: `proposal-${proposal.id}-jobarchived`,
+    subject: `İlan arşivlendi: ${job.title}`,
+    heading: 'İlan işveren tarafından arşivlendi.',
+    body: `“${job.title}” ilanı arşivlendiği için bekleyen teklifin sonlandırıldı. İlanın ve teklif geçmişinin kayıtları korunmaya devam edecek.`,
+    ctaLabel: 'Yeni işleri keşfet',
+    ctaPath: '/jobs',
+  })))
+
+  for (const path of ['/employer', '/jobs', '/freelancer', '/freelancer/activity']) revalidatePath(path)
+  revalidatePath(`/jobs/${id}`)
+  revalidatePath(`/employer/jobs/${id}/proposals`)
+  go('/employer', 'message', 'İlan arşivlendi. Teklif ve mesaj geçmişi korunuyor.')
+}
+
+export async function restoreArchivedJob(id: string, revision: string) {
+  const { supabase } = await requireRole('employer')
+  const { error } = await supabase.rpc('restore_archived_job', {
+    target_job_id: id,
+    expected_updated_at: revision,
+  })
+  if (error) go('/employer', 'error', 'İlan arşivden çıkarılamadı. Sayfayı yenileyip tekrar dene.')
+
+  revalidatePath('/employer')
+  revalidatePath(`/jobs/${id}`)
+  go(`/jobs/${id}`, 'message', 'İlan arşivden çıkarıldı ve tekliflere kapalı durumda tutuluyor.')
+}
+
+export async function deleteJob(id: string) {
+  const { supabase, user } = await requireRole('employer')
+  const { data: job } = await supabase
+    .from('jobs')
+    .select('id, title')
+    .eq('id', id)
+    .eq('employer_id', user.id)
+    .eq('status', 'draft')
+    .maybeSingle()
+  if (!job) go(`/jobs/${id}`, 'error', 'Bu ilan kalıcı olarak silinemez. Yalnızca hiç yayınlanmamış taslaklar silinebilir; diğer ilanları arşivleyebilirsin.')
+
+  const { data: deleted, error } = await supabase
+    .from('jobs')
+    .delete()
+    .eq('id', id)
+    .eq('employer_id', user.id)
+    .select('id')
+    .maybeSingle()
+  if (error || !deleted) go(`/jobs/${id}`, 'error', 'İlan silinemedi. Durum değişmiş olabilir; sayfayı yenileyip tekrar dene.')
+
+  for (const path of ['/employer', '/jobs', '/freelancer', '/freelancer/activity']) revalidatePath(path)
+  revalidatePath(`/employer/jobs/${id}/proposals`)
+  go('/employer', 'message', 'Taslak ilan kalıcı olarak silindi.')
 }
 
 export async function createProposal(jobId: string, formData: FormData) {
@@ -297,39 +432,41 @@ export async function acceptProposal(jobId: string, proposalId: string, revision
   go(comparisonPath, 'message', 'Teklif kabul edildi. Mesajlaşma artık açık.')
 }
 
-export async function rejectProposal(jobId: string, proposalId: string) {
+export async function rejectProposal(jobId: string, proposalId: string, revision: string) {
   const { supabase, user } = await requireRole('employer')
   const comparisonPath = `/employer/jobs/${jobId}/proposals`
+  const { error } = await supabase.rpc('reject_pending_proposal', { target_proposal_id: proposalId, expected_updated_at: revision })
+  if (error) go(comparisonPath, 'error', 'Teklif değişmiş veya geri çekilmiş olabilir. Sayfayı yenileyip tekrar incele.')
+
   const { data: job, error: jobError } = await supabase
     .from('jobs')
     .select('id, title')
     .eq('id', jobId)
     .eq('employer_id', user.id)
-    .eq('status', 'open')
     .maybeSingle()
 
-  if (jobError || !job) go(comparisonPath, 'error', 'Bu teklif artık reddedilemez.')
+  const { data: rejected } = jobError || !job
+    ? { data: null }
+    : await supabase
+      .from('proposals')
+      .select('id, freelancer_id')
+      .eq('id', proposalId)
+      .eq('job_id', jobId)
+      .eq('status', 'rejected')
+      .maybeSingle()
 
-  const { data: rejected, error } = await supabase
-    .from('proposals')
-    .update({ status: 'rejected' })
-    .eq('id', proposalId)
-    .eq('job_id', jobId)
-    .eq('status', 'pending')
-    .select('id, freelancer_id')
-    .maybeSingle()
-
-  if (error || !rejected) go(comparisonPath, 'error', messageFromError(error, 'Teklif reddedilemedi.'))
-  await sendNotificationEmail({
-    recipientId: rejected.freelancer_id,
-    preference: 'project_updates',
-    eventKey: `proposal-${rejected.id}-rejected`,
-    subject: `Teklif sonucu: ${job.title}`,
-    heading: 'Teklifin bu kez kabul edilmedi.',
-    body: `“${job.title}” projesindeki teklifin reddedildi. İlan yeni tekliflere açık kalmaya devam ediyor ve diğer fırsatları inceleyebilirsin.`,
-    ctaLabel: 'Yeni işleri keşfet',
-    ctaPath: '/jobs',
-  })
+  if (job && rejected) {
+    await sendNotificationEmail({
+      recipientId: rejected.freelancer_id,
+      preference: 'project_updates',
+      eventKey: `proposal-${rejected.id}-rejected`,
+      subject: `Teklif sonucu: ${job.title}`,
+      heading: 'Teklifin bu kez kabul edilmedi.',
+      body: `“${job.title}” projesindeki teklifin reddedildi. İlan yeni tekliflere açık kalmaya devam ediyor ve diğer fırsatları inceleyebilirsin.`,
+      ctaLabel: 'Yeni işleri keşfet',
+      ctaPath: '/jobs',
+    })
+  }
   revalidatePath(`/jobs/${jobId}`)
   revalidatePath(comparisonPath)
   revalidatePath('/employer')
@@ -427,6 +564,7 @@ export async function createReview(jobId: string, revieweeId: string, formData: 
 }
 
 export async function startCheckout(proposalId: string) {
+  if (!paymentsEnabled) go(`/messages/${proposalId}`, 'error', 'Ödeme özelliği henüz kullanıma açık değil.')
   const { supabase, user } = await requireRole('employer')
   const secret = process.env.STRIPE_SECRET_KEY
   if (!secret) go(`/messages/${proposalId}`, 'error', 'Stripe Connect henüz etkinleştirilmedi.')
@@ -466,6 +604,7 @@ export async function startCheckout(proposalId: string) {
 }
 
 export async function releasePayment(proposalId: string) {
+  if (!paymentsEnabled) go(`/messages/${proposalId}`, 'error', 'Ödeme özelliği henüz kullanıma açık değil.')
   const { supabase, user } = await requireRole('employer')
   const secret = process.env.STRIPE_SECRET_KEY
   const admin = createAdminClient()

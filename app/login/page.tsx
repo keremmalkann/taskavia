@@ -27,7 +27,7 @@ export default async function LoginPage({
           <h2>İyi işler,<br />kaldığın yerden<br />devam eder.</h2>
           <p>Projelerini, tekliflerini ve yeni fırsatlarını tek bir yerde yönet.</p>
         </div>
-        <div className="login-note"><span>✦</span><p>Güvenli ödeme, doğrulanmış profiller ve şeffaf iletişim.</p></div>
+        <div className="login-note"><span>✦</span><p>Doğrulanmış profiller, düzenli proje akışı ve şeffaf iletişim.</p></div>
       </aside>
       <section className="signup-main">
         <div className="signup-form-wrap">

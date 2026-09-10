@@ -9,16 +9,39 @@ import { getFavorites } from '@/lib/favorites'
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'İşleri Keşfet — Taskavia', description: 'Açık freelancer ilanlarını ara ve filtrele.' }
 
+function normalizeSearch(value: string | undefined) {
+  return String(value ?? '').trim().replace(/\s+/g, ' ').slice(0, 80)
+}
+
+function matchesFallbackSearch(job: { title: string; description: string; category: string; skills?: string[] | null }, value: string) {
+  const needle = value.toLocaleLowerCase('tr-TR')
+  return [job.title, job.description, job.category, ...(job.skills ?? [])]
+    .join(' ')
+    .toLocaleLowerCase('tr-TR')
+    .includes(needle)
+}
+
 export default async function JobsPage({ searchParams }: { searchParams: Promise<{ q?: string; category?: string; minBudget?: string }> }) {
   const filters = await searchParams
   const { supabase, fullName, user } = await requireRole('freelancer')
   const favoriteIds = new Set(getFavorites(user.user_metadata).map((favorite) => favorite.jobId))
   const selectedCategory = categories.includes(filters.category as (typeof categories)[number]) ? filters.category : ''
+  const search = normalizeSearch(filters.q)
   let query = supabase.from('jobs').select('*, employer:profiles!jobs_employer_id_fkey(full_name, company_name)').eq('status', 'open').order('created_at', { ascending: false })
-  if (filters.q) query = query.ilike('title', `%${filters.q.slice(0, 80)}%`)
+  if (search) query = query.textSearch('search_vector', search, { config: 'simple', type: 'websearch' })
   if (selectedCategory) query = query.eq('category', selectedCategory)
   if (Number(filters.minBudget) > 0) query = query.gte('budget_max', Number(filters.minBudget))
-  const { data: jobs, error } = await query.limit(50)
+  let { data: jobs, error } = await query.limit(50)
+
+  // A deployment remains usable while the search migration is being rolled out.
+  if (search && error) {
+    let fallbackQuery = supabase.from('jobs').select('*, employer:profiles!jobs_employer_id_fkey(full_name, company_name)').eq('status', 'open').order('created_at', { ascending: false })
+    if (selectedCategory) fallbackQuery = fallbackQuery.eq('category', selectedCategory)
+    if (Number(filters.minBudget) > 0) fallbackQuery = fallbackQuery.gte('budget_max', Number(filters.minBudget))
+    const fallback = await fallbackQuery.limit(100)
+    jobs = fallback.data?.filter((job) => matchesFallbackSearch(job, search)) ?? null
+    error = fallback.error
+  }
 
   return (
     <MarketplaceShell name={fullName} role="freelancer" active="jobs">
@@ -35,7 +58,7 @@ export default async function JobsPage({ searchParams }: { searchParams: Promise
       </nav>
       <form className="job-filters job-filters-simple">
         {selectedCategory && <input type="hidden" name="category" value={selectedCategory} />}
-        <label className="job-search"><span>⌕</span><input name="q" defaultValue={filters.q} placeholder="İlanlarda ara…" /></label>
+        <label className="job-search"><span>⌕</span><input name="q" defaultValue={search} placeholder="Başlık, açıklama veya beceri ara…" /></label>
         <input name="minBudget" type="number" min="0" defaultValue={filters.minBudget} placeholder="Min. bütçe" />
         <button type="submit">Filtrele</button>
       </form>

@@ -94,11 +94,11 @@ export default function MarketplaceHome() {
 
       <section className="section how-section" id="nasil-calisir">
         <div className="section-heading centered"><div><span className="section-kicker">BASİT VE GÜVENLİ</span><h2>Fikirden sonuca, üç adımda</h2></div></div>
-        <div className="steps"><article><span className="step-no">01</span><div className="step-icon">✦</div><h3>İhtiyacını anlat</h3><p>Kısa bir proje özeti oluştur. Bütçeni, takvimini ve beklentini paylaş.</p></article><article><span className="step-no">02</span><div className="step-icon">◎</div><h3>Doğru kişiyle eşleş</h3><p>Teklifleri ve portfolyoları karşılaştır, sana en uygun uzmanı seç.</p></article><article><span className="step-no">03</span><div className="step-icon">✓</div><h3>Güvenle tamamla</h3><p>Ödemeni korumaya al, iletişimi tek yerde yürüt ve işi onayla.</p></article></div>
+        <div className="steps"><article><span className="step-no">01</span><div className="step-icon">✦</div><h3>İhtiyacını anlat</h3><p>Kısa bir proje özeti oluştur. Bütçeni, takvimini ve beklentini paylaş.</p></article><article><span className="step-no">02</span><div className="step-icon">◎</div><h3>Doğru kişiyle eşleş</h3><p>Teklifleri ve portfolyoları karşılaştır, sana en uygun uzmanı seç.</p></article><article><span className="step-no">03</span><div className="step-icon">✓</div><h3>Güvenle tamamla</h3><p>Teslimatı netleştir, iletişimi tek yerde yürüt ve işi birlikte tamamla.</p></article></div>
       </section>
 
       <section className="cta-section"><div className="cta-spark">✦</div><p>Sıradaki iyi iş burada başlıyor.</p><h2>Birlikte üretmeye<br />hazır mısın?</h2><div className="cta-actions"><Link href="/signup" className="button button-light">Freelancer olarak katıl <span>↗</span></Link><Link href="/signup" className="button button-outline-light">Proje yayınla <span>→</span></Link></div></section>
-      <footer><Link className="brand footer-brand" href="/"><span className="brand-mark">t</span><span>taskavia</span></Link><p>İyi işlerin buluşma noktası.</p><div className="footer-links"><a href="#projeler">İşler</a><a href="#yetenekler">Yetenekler</a><a href="#nasil-calisir">Nasıl çalışır?</a><Link href="/signup">Bize katıl</Link></div><span className="copyright">© 2026 Taskavia</span></footer>
+      <footer><Link className="brand footer-brand" href="/"><span className="brand-mark">t</span><span>taskavia</span></Link><p>İyi işlerin buluşma noktası.</p><div className="footer-links"><a href="#projeler">İşler</a><a href="#nasil-calisir">Nasıl çalışır?</a><Link href="/terms">Koşullar</Link><Link href="/privacy">Gizlilik</Link><Link href="/cookies">Çerezler</Link></div><span className="copyright">© 2026 Taskavia</span></footer>
     </main>
   );
 }

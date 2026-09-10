@@ -56,8 +56,9 @@ export async function signUp(formData: FormData) {
   const fullName = String(formData.get('fullName') ?? '').trim()
   const requestedRole = String(formData.get('role') ?? '')
   const role = requestedRole === 'employer' ? 'employer' : 'freelancer'
+  const termsAccepted = formData.get('termsAccepted') === 'accepted'
 
-  if (!credentials || fullName.length < 2) {
+  if (!credentials || fullName.length < 2 || !termsAccepted) {
     redirect('/signup?error=' + encodeURIComponent('Lütfen bilgilerini eksiksiz ve geçerli biçimde gir.'))
   }
 
@@ -98,7 +99,9 @@ export async function signIn(formData: FormData) {
     redirect('/login?error=' + encodeURIComponent('E-posta veya şifre hatalı.'))
   }
 
-  redirect(data.user.user_metadata.role === 'employer' ? '/employer' : '/freelancer')
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).maybeSingle()
+  const role = profile?.role ?? data.user.user_metadata.role
+  redirect(role === 'employer' ? '/employer' : '/freelancer')
 }
 
 export async function requestPasswordReset(formData: FormData) {

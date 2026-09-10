@@ -24,13 +24,21 @@ function AccordionSummary({ number, title, description, status }: { number: stri
 
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ error?: string; message?: string }> }) {
   const params = await searchParams
-  const { user, role, fullName } = await requireUser()
+  const { supabase, user, role, fullName } = await requireUser()
+  const { data: privacyProfile } = await supabase
+    .from('profiles')
+    .select('profile_visibility, show_activity, show_completed_jobs')
+    .eq('id', user.id)
+    .maybeSingle()
   const settings = (user.user_metadata.settings ?? {}) as Settings
   const notifications = settings.notifications ?? {}
   const privacy = settings.privacy ?? {}
   const notificationValues = [notifications.messages ?? true, notifications.project_updates ?? true, notifications.opportunities ?? true, notifications.weekly_digest ?? true, notifications.marketing ?? false]
   const enabledNotificationCount = notificationValues.filter(Boolean).length
-  const privacyStatus = privacy.profile_visibility === 'members' ? 'Yalnızca üyeler' : 'Herkese açık'
+  const profileVisibility = privacyProfile?.profile_visibility ?? privacy.profile_visibility ?? 'public'
+  const showActivity = privacyProfile?.show_activity ?? privacy.show_activity ?? true
+  const showCompletedJobs = privacyProfile?.show_completed_jobs ?? privacy.show_completed_jobs ?? true
+  const privacyStatus = profileVisibility === 'members' ? 'Yalnızca üyeler' : 'Herkese açık'
   const joinedAt = new Intl.DateTimeFormat('tr-TR', { month: 'long', year: 'numeric', timeZone: 'Europe/Istanbul' }).format(new Date(user.created_at))
   const isAdmin = isAdminEmail(user.email)
 
@@ -56,10 +64,10 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
           <details className="settings-accordion">
             <AccordionSummary number="02" title="Gizlilik" description="Profilinin görünürlüğünü ve hareketlerini belirle." status={privacyStatus} />
             <div className="settings-accordion-body">
-              <label className="settings-select">Profil görünürlüğü<select name="profileVisibility" defaultValue={privacy.profile_visibility ?? 'public'}><option value="public">Herkese açık</option><option value="members">Yalnızca Taskavia üyeleri</option></select><small>Profilin arama ve freelancer listelerinde kimlere gösterilsin?</small></label>
+              <label className="settings-select">Profil görünürlüğü<select name="profileVisibility" defaultValue={profileVisibility}><option value="public">Herkese açık</option><option value="members">Yalnızca Taskavia üyeleri</option></select><small>Herkese açık profiller giriş yapmadan görüntülenebilir. Üyelere özel profiller ve dosyaları yalnızca oturum açmış kullanıcılar tarafından görülebilir.</small></label>
               <div className="settings-options">
-                <Toggle name="showActivity" title="Aktiflik durumunu göster" description="Yakın zamanda aktif olduğunu diğer Taskavia üyeleri görebilsin." defaultChecked={privacy.show_activity ?? true} />
-                <Toggle name="showCompletedJobs" title="Tamamlanan işleri göster" description="Tamamlanan proje sayın güven profiline dahil edilsin." defaultChecked={privacy.show_completed_jobs ?? true} />
+                <Toggle name="showActivity" title="Aktiflik durumunu göster" description="Yakın zamanda aktif olduğunu diğer Taskavia üyeleri görebilsin." defaultChecked={showActivity} />
+                <Toggle name="showCompletedJobs" title="Tamamlanan işleri göster" description="Tamamlanan proje sayın güven profiline dahil edilsin." defaultChecked={showCompletedJobs} />
               </div>
             </div>
           </details>
