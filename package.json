@@ -1,5 +1,5 @@
 {
-  "name": "freelance-marketplace",
+  "name": "taskavia",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -40,6 +40,10 @@
     "typescript": "^5",
     "vite": "^8.2.2",
     "wrangler": "^4.127.0"
+  },
+  "overrides": {
+    "js-yaml": "4.3.2",
+    "sharp": "0.35.4"
   },
   "type": "module"
 }
