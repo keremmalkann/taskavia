@@ -6,6 +6,7 @@ import { PendingSubmitButton } from '@/app/pending-submit-button'
 import { completeJobFromWorkspace } from '@/lib/actions/marketplace'
 import { requireUser } from '@/lib/auth/role'
 import { MessageThread } from './message-thread'
+import { SafetyActions } from '@/app/safety-actions'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Çalışma Alanı — Taskavia', description: 'Proje mesajlarını ve çalışma durumunu yönet.' }
@@ -21,10 +22,14 @@ export default async function MessagesPage({ params, searchParams }: { params: P
   const { data: messages } = await supabase.from('messages').select('id, sender_id, body, created_at').eq('proposal_id', proposalId).order('created_at', { ascending: true })
   const counterpart = role === 'employer' ? freelancer?.full_name : employer?.company_name || employer?.full_name || 'İşveren'
   const reviewee = role === 'employer' ? proposal.freelancer_id : job.employer_id
+  const [{ data: blockedRelationship }, { data: ownBlock }] = await Promise.all([
+    supabase.rpc('is_blocked_with', { target_user_id: reviewee }),
+    supabase.from('user_blocks').select('blocked_id').eq('blocker_id', user.id).eq('blocked_id', reviewee).maybeSingle(),
+  ])
 
   return <MarketplaceShell name={fullName} role={role} active="dashboard">
     <Feedback {...feedback} />
-    <div className="workspace-head message-page-head"><div><p>AKTİF ÇALIŞMA ALANI</p><h1>{job.title}</h1><span>{counterpart} ile güvenli proje görüşmesi</span></div><nav className="message-page-links" aria-label="Çalışma alanı işlemleri"><Link className="message-back-link" href="/messages"><span aria-hidden="true">←</span> Mesajlar</Link><div><Link href={`/messages/${proposalId}/summary`}><span aria-hidden="true">▤</span> Çalışma özeti</Link><Link href={`/jobs/${job.id}`}><span aria-hidden="true">↗</span> İlan</Link></div></nav></div>
+    <div className="workspace-head message-page-head"><div><p>AKTİF ÇALIŞMA ALANI</p><h1>{job.title}</h1><span>{counterpart} ile güvenli proje görüşmesi</span></div><nav className="message-page-links" aria-label="Çalışma alanı işlemleri"><Link className="message-back-link" href="/messages"><span aria-hidden="true">←</span> Mesajlar</Link><div><Link href={`/messages/${proposalId}/summary`}><span aria-hidden="true">▤</span> Çalışma özeti</Link><Link href={`/jobs/${job.id}`}><span aria-hidden="true">↗</span> İlan</Link><SafetyActions compact returnPath={`/messages/${proposalId}`} subjectType="user" subjectId={reviewee} targetUserId={reviewee} blockedByMe={Boolean(ownBlock)} relationshipBlocked={Boolean(blockedRelationship)} /></div></nav></div>
     <div className="workspace-layout message-workspace">
       <MessageThread
         proposalId={proposalId}
@@ -33,6 +38,7 @@ export default async function MessagesPage({ params, searchParams }: { params: P
         counterpartName={counterpart}
         jobTitle={job.title}
         initialMessages={messages ?? []}
+        blocked={Boolean(blockedRelationship)}
       />
       <aside className="payment-panel message-payment-panel project-completion-panel"><span>PROJE DURUMU</span><h2>{job.status === 'completed' ? 'Çalışma tamamlandı' : 'Çalışma devam ediyor'}</h2><p>{job.status === 'completed' ? 'Proje kapatıldı. Artık çalışma deneyiminizi değerlendirebilirsiniz.' : 'Teslimat ve görüşmeler tamamlandığında işveren çalışmayı kapatabilir.'}</p><div className="message-project-summary"><small>PROJE</small><strong>{job.title}</strong><small>ÇALIŞMA ARKADAŞIN</small><strong>{counterpart}</strong></div><div className="payment-status"><i className={job.status === 'completed' ? 'released' : 'funded'} />{job.status === 'completed' ? 'Çalışma tamamlandı' : 'Aktif çalışma'}</div>
         {role === 'employer' && job.status === 'assigned' && <form action={completeJobFromWorkspace.bind(null, proposalId, job.id)}><PendingSubmitButton pendingLabel="Tamamlanıyor…">Çalışmayı tamamla →</PendingSubmitButton></form>}

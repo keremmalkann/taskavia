@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getSiteUrl } from '@/lib/site-url'
 import type { AuthError } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
+import { consumeAnonymousRateLimit } from '@/lib/security/rate-limit'
 
 function getCredentials(formData: FormData) {
   const email = String(formData.get('email') ?? '').trim().toLowerCase()
@@ -62,6 +63,9 @@ export async function signUp(formData: FormData) {
     redirect('/signup?error=' + encodeURIComponent('Lütfen bilgilerini eksiksiz ve geçerli biçimde gir.'))
   }
 
+  const rateLimit = await consumeAnonymousRateLimit({ scope: 'signup', identifier: credentials.email, maxAttempts: 5, windowSeconds: 3600 })
+  if (!rateLimit.allowed) redirect('/signup?error=' + encodeURIComponent('Çok fazla kayıt denemesi yapıldı. Lütfen bir saat sonra tekrar dene.'))
+
   const { data, error } = await supabase.auth.signUp({
     email: credentials.email,
     password: credentials.password,
@@ -92,6 +96,9 @@ export async function signIn(formData: FormData) {
     redirect('/login?error=' + encodeURIComponent('E-posta veya şifre hatalı.'))
   }
 
+  const rateLimit = await consumeAnonymousRateLimit({ scope: 'login', identifier: credentials.email, maxAttempts: 8, windowSeconds: 900 })
+  if (!rateLimit.allowed) redirect('/login?error=' + encodeURIComponent('Çok fazla giriş denemesi yapıldı. Güvenliğin için 15 dakika sonra tekrar dene.'))
+
   const supabase = await createClient()
   const { data, error } = await supabase.auth.signInWithPassword(credentials)
 
@@ -110,6 +117,9 @@ export async function requestPasswordReset(formData: FormData) {
   if (!email || !email.includes('@')) {
     redirect('/forgot-password?error=' + encodeURIComponent('Geçerli bir e-posta adresi gir.'))
   }
+
+  const rateLimit = await consumeAnonymousRateLimit({ scope: 'password-reset', identifier: email, maxAttempts: 3, windowSeconds: 3600 })
+  if (!rateLimit.allowed) redirect('/forgot-password?error=' + encodeURIComponent('Çok fazla sıfırlama isteği gönderildi. Lütfen bir saat sonra tekrar dene.'))
 
   const supabase = await createClient()
   const { error } = await supabase.auth.resetPasswordForEmail(email, {

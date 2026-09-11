@@ -45,3 +45,18 @@ export async function changeJobVisibility(jobId: string, operation: 'cancel' | '
   revalidatePath('/freelancer')
   go('message', operation === 'cancel' ? 'İlan yayından kaldırıldı.' : 'İlan yeniden yayına alındı.')
 }
+
+export async function changeReportStatus(reportId: string, operation: 'reviewing' | 'resolved' | 'dismissed', formData: FormData) {
+  const { admin, user } = await requireAdmin()
+  const note = String(formData.get('note') ?? '').trim().slice(0, 1000)
+  const { data: report, error } = await admin
+    .from('safety_reports')
+    .update({ status: operation, resolution_note: note || null, reviewed_by: user.id, reviewed_at: new Date().toISOString() })
+    .eq('id', reportId)
+    .in('status', operation === 'reviewing' ? ['pending'] : ['pending', 'reviewing'])
+    .select('id')
+    .maybeSingle()
+  if (error || !report) go('error', 'Şikâyet durumu güncellenemedi. Kayıt daha önce işlenmiş olabilir.')
+  revalidatePath('/admin')
+  go('message', operation === 'resolved' ? 'Şikâyet çözüldü olarak işaretlendi.' : operation === 'dismissed' ? 'Şikâyet kapatıldı.' : 'Şikâyet incelemeye alındı.')
+}

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { MarketplaceShell, SetupNotice } from '@/app/marketplace-shell'
+import { Feedback, MarketplaceShell, SetupNotice } from '@/app/marketplace-shell'
 import { requireUser } from '@/lib/auth/role'
 import { getMessageReads, isMessageUnread } from '@/lib/message-reads'
 import { formatNotificationTime } from '@/lib/notifications'
@@ -17,7 +17,8 @@ function one<T>(value: T | T[] | null | undefined) {
   return Array.isArray(value) ? value[0] : value
 }
 
-export default async function MessagesPage() {
+export default async function MessagesPage({ searchParams }: { searchParams: Promise<{ error?: string; message?: string }> }) {
+  const feedback = await searchParams
   const { supabase, user, role, fullName } = await requireUser()
   const { data, error } = await supabase
     .from('proposals')
@@ -49,6 +50,7 @@ export default async function MessagesPage() {
   }
 
   return <MarketplaceShell name={fullName} role={role} active="messages">
+    <Feedback {...feedback} />
     <div className="workspace-head messages-head"><div><p>MESAJLAR</p><h1>Konuşmaların</h1><span>Aktif projelerindeki işveren ve freelancer görüşmelerine buradan ulaş.</span></div></div>
     {error ? <SetupNotice /> : conversations.length > 0 ? <section className="conversation-list" aria-label="Konuşmalar">
       {conversations.map((conversation) => {

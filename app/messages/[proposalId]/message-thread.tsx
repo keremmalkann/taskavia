@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { sendMessage } from '@/lib/actions/marketplace'
 import { MESSAGE_READ_EVENT } from '@/app/message-shortcut'
 import { PendingSubmitButton } from '@/app/pending-submit-button'
+import { SafetyActions } from '@/app/safety-actions'
 
 type Message = { id: string; sender_id: string; body: string; created_at: string }
 
@@ -15,6 +16,7 @@ type MessageThreadProps = {
   counterpartName: string
   jobTitle: string
   initialMessages: Message[]
+  blocked?: boolean
 }
 
 async function markConversationRead(proposalId: string) {
@@ -30,7 +32,7 @@ async function markConversationRead(proposalId: string) {
   }
 }
 
-export function MessageThread({ proposalId, userId, currentUserName, counterpartName, jobTitle, initialMessages }: MessageThreadProps) {
+export function MessageThread({ proposalId, userId, currentUserName, counterpartName, jobTitle, initialMessages, blocked = false }: MessageThreadProps) {
   const [messages, setMessages] = useState(initialMessages)
   const messageListRef = useRef<HTMLDivElement>(null)
   const counterpartInitials = counterpartName.split(' ').slice(0, 2).map((part) => part[0]).join('').toLocaleUpperCase('tr-TR')
@@ -61,7 +63,7 @@ export function MessageThread({ proposalId, userId, currentUserName, counterpart
     <header className="conversation-toolbar">
       <span className="conversation-toolbar-avatar" aria-hidden="true">{counterpartInitials}</span>
       <div><strong>{counterpartName}</strong><small>{jobTitle}</small></div>
-      <span className="conversation-status"><i aria-hidden="true" /> Aktif proje</span>
+      <span className={`conversation-status${blocked ? ' blocked' : ''}`}><i aria-hidden="true" /> {blocked ? 'Mesajlaşma engellendi' : 'Aktif proje'}</span>
     </header>
     <div className="message-list" ref={messageListRef}>
       {messages.map((message) => {
@@ -71,11 +73,12 @@ export function MessageThread({ proposalId, userId, currentUserName, counterpart
           <strong>{isMine ? 'Sen' : counterpartName}</strong>
           <p>{message.body}</p>
           <time>{new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }).format(new Date(message.created_at))}</time>
+          {!isMine && <SafetyActions compact label="Bildir" returnPath={`/messages/${proposalId}`} subjectType="message" subjectId={message.id} />}
         </article>
       })}
       {messages.length === 0 && <div className="marketplace-empty"><p>İlk mesajı göndererek çalışma alanını başlat.</p></div>}
     </div>
-    <form action={sendMessage.bind(null, proposalId)} className="message-composer">
+    {blocked ? <div className="message-blocked-banner"><strong>Bu konuşmada mesaj gönderilemiyor.</strong><span>Engeli sen koyduysan güvenlik menüsünden kaldırabilirsin.</span></div> : <form action={sendMessage.bind(null, proposalId)} className="message-composer">
       <div className="message-composer-field">
         <textarea
           aria-label="Mesaj"
@@ -97,6 +100,6 @@ export function MessageThread({ proposalId, userId, currentUserName, counterpart
         />
       </div>
       <PendingSubmitButton iconOnly pendingLabel="Mesaj gönderiliyor" aria-label="Mesajı gönder" title="Mesajı gönder"><span aria-hidden="true">➤</span></PendingSubmitButton>
-    </form>
+    </form>}
   </div>
 }

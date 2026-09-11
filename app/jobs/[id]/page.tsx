@@ -10,6 +10,7 @@ import { ProposalManager } from './proposal-manager'
 import { FavoriteButton } from '@/app/favorite-button'
 import { PendingSubmitButton } from '@/app/pending-submit-button'
 import { getFavorites } from '@/lib/favorites'
+import { SafetyActions } from '@/app/safety-actions'
 import './job-owner-controls.css'
 
 export const dynamic = 'force-dynamic'
@@ -30,7 +31,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
     <Feedback {...feedback} />
     {jobError && <SetupNotice />}
     {job && <div className="job-detail-page">
-      {role === 'freelancer' && <div className="job-favorite-toolbar"><Link href="/freelancer/favorites">Favorilerim →</Link><FavoriteButton jobId={id} saved={getFavorites(user.user_metadata).some((favorite) => favorite.jobId === id)} title={job.title} /></div>}
+      {role === 'freelancer' && <div className="job-favorite-toolbar"><Link href="/freelancer/favorites">Favorilerim →</Link><div className="job-toolbar-actions"><FavoriteButton jobId={id} saved={getFavorites(user.user_metadata).some((favorite) => favorite.jobId === id)} title={job.title} />{job.employer_id !== user.id && <SafetyActions compact returnPath={`/jobs/${id}`} subjectType="job" subjectId={id} />}</div></div>}
       <div className="job-detail-head"><div><span>{job.category} · {job.status === 'open' ? 'Açık ilan' : job.status === 'assigned' ? 'Freelancer atandı' : job.status === 'completed' ? 'Tamamlandı' : job.status === 'draft' ? 'Taslak (yayında değil)' : job.status === 'closed' ? 'Tekliflere kapalı' : job.status === 'archived' ? 'Arşivlendi' : 'İptal edildi'}</span><h1>{job.title}</h1><p>{employer?.company_name || employer?.full_name} · {formatDate(job.created_at)}</p></div><div><small>BÜTÇE</small><strong>{formatCurrency(job.budget_min)} – {formatCurrency(job.budget_max)}</strong><span>Son tarih: {formatDate(job.deadline)}</span></div></div>
       <div className="job-detail-layout">
         <article className="job-description"><h2>Proje hakkında</h2><p>{job.description}</p><h3>Aranan beceriler</h3><div className="job-skill-row">{job.skills?.map((skill: string) => <span key={skill}>{skill}</span>)}</div></article>

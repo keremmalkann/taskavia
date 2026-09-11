@@ -10,10 +10,12 @@
    6. `migrations/20260910120000_profile_privacy.sql`
    7. `migrations/20260910150000_safe_job_archiving.sql`
    8. `migrations/20260910180000_job_search.sql`
+   9. `migrations/20260911120000_abuse_protection.sql`
 3. Authentication → URL Configuration altında canlı site adresini izinli yönlendirme adreslerine ekleyin.
 4. Storage altında özel erişimli `portfolios` ve `resumes` bucket'larının oluştuğunu doğrulayın. Portföy bağlantıları profil görünürlüğüne göre süreli olarak imzalanır; bucket public bırakılmamalıdır.
 5. Realtime → Publications altında `messages` tablosunun etkin olduğunu doğrulayın.
-6. Son olarak SQL Editor'de `verify_release.sql` dosyasını çalıştırın. Sonuçtaki bütün `status` alanları `OK` olmalıdır. `MISSING` bulunan bir ortam yayınlanmamalıdır.
+6. Barındırma ortamında anonim giriş/kayıt limitleri için uzun ve rastgele bir `RATE_LIMIT_SECRET` tanımlayın. `SUPABASE_SERVICE_ROLE_KEY` yalnızca sunucuda tutulmalıdır.
+7. Son olarak SQL Editor'de `verify_release.sql` dosyasını çalıştırın. Sonuçtaki bütün `status` alanları `OK` olmalıdır. `MISSING` bulunan bir ortam yayınlanmamalıdır.
 
 Yeni bir migration eklendiğinde bu liste ve `verify_release.sql` birlikte güncellenmelidir. Migration'ları atlamak; ilan durum geçişlerinde, teklif kabul/ret işlemlerinde veya dosya erişiminde çalışma zamanı hatalarına yol açar.
 

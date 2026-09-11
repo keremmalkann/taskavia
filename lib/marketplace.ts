@@ -19,6 +19,7 @@ export function formatDate(value: string | null | undefined) {
 }
 
 export function messageFromError(error: { code?: string; message?: string } | null, fallback: string) {
+  if (error?.message?.includes('rate_limit_exceeded')) return 'Çok hızlı işlem yapıyorsun. Lütfen kısa bir süre bekleyip tekrar dene.'
   if (!error) return fallback
   if (error.code === '23505') return 'Bu işlem daha önce yapılmış.'
   if (error.code === '42P01' || error.code === 'PGRST205') return 'Pazar yeri veritabanı kurulumu henüz tamamlanmadı.'

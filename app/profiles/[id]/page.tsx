@@ -2,7 +2,8 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { MarketplaceShell, SetupNotice } from '@/app/marketplace-shell'
+import { Feedback, MarketplaceShell, SetupNotice } from '@/app/marketplace-shell'
+import { SafetyActions } from '@/app/safety-actions'
 import { formatCurrency, formatDate } from '@/lib/marketplace'
 import { resolvePortfolioUrl } from '@/lib/portfolio-files'
 import { createClient } from '@/lib/supabase/server'
@@ -27,8 +28,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   }
 }
 
-export default async function PublicProfilePage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
+export default async function PublicProfilePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; message?: string }> }) {
+  const [{ id }, feedback] = await Promise.all([params, searchParams])
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   const { data: viewerProfile } = user
@@ -56,6 +57,9 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   ])
   const average = reviews?.length ? (reviews.reduce((sum, review) => sum + Number(review.rating), 0) / reviews.length).toFixed(1) : null
   const isOwnProfile = user?.id === id
+  const { data: block } = user && !isOwnProfile
+    ? await supabase.from('user_blocks').select('blocked_id').eq('blocker_id', user.id).eq('blocked_id', id).maybeSingle()
+    : { data: null }
   const displayName = profile?.role === 'employer' ? profile.company_name || profile.full_name : profile?.full_name
 
   const content = <>
@@ -64,7 +68,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
       <header className="public-profile-hero">
         <div className="public-profile-avatar">{profile.full_name.slice(0, 2).toLocaleUpperCase('tr-TR')}</div>
         <div className="public-profile-identity"><span>{profile.role === 'freelancer' ? 'FREELANCER PROFİLİ' : 'İŞVEREN PROFİLİ'}</span><h1>{displayName}</h1><p>{profile.title || (profile.role === 'freelancer' ? 'Freelancer' : 'İşveren')}</p></div>
-        <div className="public-profile-actions">{isOwnProfile ? <Link className="primary" href="/profile">Profili düzenle →</Link> : user ? <Link href={viewerRole === 'employer' ? '/employer' : '/jobs'}>Geri dön →</Link> : <Link className="primary" href="/signup">Taskavia&apos;ya katıl →</Link>}</div>
+        <div className="public-profile-actions">{isOwnProfile ? <Link className="primary" href="/profile">Profili düzenle →</Link> : user ? <><Link href={viewerRole === 'employer' ? '/employer' : '/jobs'}>Geri dön →</Link><SafetyActions compact returnPath={`/profiles/${id}`} subjectType="user" subjectId={id} targetUserId={id} blockedByMe={Boolean(block)} /></> : <Link className="primary" href="/signup">Taskavia&apos;ya katıl →</Link>}</div>
       </header>
 
       <section className={`public-profile-stats ${profile.role === 'employer' ? 'employer' : ''}`}>
@@ -96,7 +100,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   </>
 
   if (user) {
-    return <MarketplaceShell name={fullName} role={viewerRole} active={isOwnProfile ? 'profile' : viewerRole === 'employer' ? 'dashboard' : 'jobs'}>{content}</MarketplaceShell>
+    return <MarketplaceShell name={fullName} role={viewerRole} active={isOwnProfile ? 'profile' : viewerRole === 'employer' ? 'dashboard' : 'jobs'}><Feedback {...feedback} />{content}</MarketplaceShell>
   }
 
   return <main className="public-profile-guest"><nav className="site-nav" aria-label="Ana navigasyon"><Link className="brand" href="/" aria-label="Taskavia ana sayfa"><span className="brand-mark" aria-hidden="true">t</span><span>taskavia</span></Link><div className="nav-actions"><Link className="text-link" href="/login">Giriş yap</Link><Link className="button button-dark button-small" href="/signup">Ücretsiz katıl <span aria-hidden="true">↗</span></Link></div></nav><div className="public-profile-guest-content">{content}</div></main>
