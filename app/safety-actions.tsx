@@ -10,11 +10,12 @@ type SafetyActionsProps = {
   relationshipBlocked?: boolean
   compact?: boolean
   label?: string
+  iconOnly?: boolean
 }
 
-export function SafetyActions({ returnPath, subjectType, subjectId, targetUserId, blockedByMe = false, relationshipBlocked = false, compact = false, label = 'Güvenlik' }: SafetyActionsProps) {
-  return <details className={`safety-menu${compact ? ' compact' : ''}`}>
-    <summary aria-label={`${label} işlemleri`}>{label} <span aria-hidden="true">•••</span></summary>
+export function SafetyActions({ returnPath, subjectType, subjectId, targetUserId, blockedByMe = false, relationshipBlocked = false, compact = false, label = 'Güvenlik', iconOnly = false }: SafetyActionsProps) {
+  return <details className={`safety-menu${compact ? ' compact' : ''}${iconOnly ? ' icon-only' : ''}`}>
+    <summary aria-label={`${label} işlemleri`} title={`${label} işlemleri`}>{!iconOnly && label}<span aria-hidden="true">•••</span></summary>
     <div className="safety-menu-panel">
       {relationshipBlocked && <p className="safety-blocked-note">Bu kullanıcıyla etkileşim engellendi.</p>}
       {targetUserId && <form action={toggleUserBlock.bind(null, targetUserId, returnPath, blockedByMe ? 'unblock' : 'block')}>
