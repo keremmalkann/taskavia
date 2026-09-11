@@ -23,7 +23,7 @@ Yeni bir migration eklendiğinde bu liste ve `verify_release.sql` birlikte günc
 
 1. Migration'ları önce canlıdan ayrı bir Supabase test projesinde doğrulayın.
 2. `npm run lint`, `npm run test:unit` ve `npm run build` komutlarının tamamının başarılı olduğunu kontrol edin.
-3. Uçtan uca test geçici veri oluşturur ve sonunda temizler; yine de yalnızca izole test projesinde çalıştırılmalıdır. Test ortamının `SUPABASE_SERVICE_ROLE_KEY` değerini ayarlayın ve `TASKAVIA_E2E_ALLOW_REMOTE_WRITE=true TASKAVIA_E2E_PROJECT_REF=<test-project-ref> npm run test:e2e` komutunu kullanın. Project ref hedef URL ile birebir eşleşmezse test başlamaz.
+3. Tarayıcı uçtan uca testi geçici veri oluşturur ve sonunda temizler; yine de yalnızca izole test projesinde çalıştırılmalıdır. Test ortamının `SUPABASE_SERVICE_ROLE_KEY` değerini ayarlayın ve `TASKAVIA_E2E_ALLOW_REMOTE_WRITE=true TASKAVIA_E2E_PROJECT_REF=<test-project-ref> npm run test:e2e` komutunu kullanın. Project ref hedef URL ile birebir eşleşmezse test başlamaz. Veri katmanı ve RLS probları ayrıca `npm run test:e2e:api` ile çalıştırılabilir.
 4. `verify_release.sql` sonucunda `MISSING` satırı olmadığını doğrulayın.
 5. Canlı ortam değişkenlerini ve Authentication yönlendirme adreslerini kontrol ettikten sonra uygulamayı yayınlayın.
 
