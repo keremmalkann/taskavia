@@ -1,4 +1,5 @@
 import { getSiteUrl } from '@/lib/site-url'
+import { ErrorCodes, reportServerError } from '@/lib/observability/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 type EmailPreference = 'messages' | 'project_updates'
@@ -81,12 +82,20 @@ export async function sendNotificationEmail(message: NotificationEmail) {
       }),
     })
     if (!response.ok) {
-      console.error('Taskavia notification email failed', response.status, await response.text())
+      await reportServerError(new Error(`E-posta sağlayıcısı HTTP ${response.status} döndürdü.`), {
+        code: ErrorCodes.emailDeliveryFailed,
+        event: 'notification.email_delivery_failed',
+        context: { status: response.status, preference: message.preference, eventKey: message.eventKey },
+      })
       return 'failed' as const
     }
     return 'sent' as const
   } catch (error) {
-    console.error('Taskavia notification email failed', error)
+    await reportServerError(error, {
+      code: ErrorCodes.emailDeliveryFailed,
+      event: 'notification.email_delivery_failed',
+      context: { preference: message.preference, eventKey: message.eventKey },
+    })
     return 'failed' as const
   }
 }

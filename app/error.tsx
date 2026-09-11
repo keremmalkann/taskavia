@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useErrorReport } from "@/app/use-error-report";
 
 export default function ErrorPage({
   error,
@@ -9,6 +10,8 @@ export default function ErrorPage({
   error: Error & { digest?: string };
   retry: () => void;
 }) {
+  const reference = useErrorReport(error);
+
   return (
     <main className="system-state-shell">
       <section className="system-state-card" aria-labelledby="error-title">
@@ -28,9 +31,7 @@ export default function ErrorPage({
               İşlemin tamamlanamadı. Bilgilerin güvende; tekrar deneyebilir veya ana
               sayfaya dönebilirsin.
             </p>
-            {error.digest ? (
-              <small className="system-state-reference">Referans: {error.digest}</small>
-            ) : null}
+            <small className="system-state-reference">Hata referansı: {reference}</small>
             <div className="system-state-actions">
               <button type="button" onClick={retry}>
                 Tekrar dene <span aria-hidden="true">↻</span>

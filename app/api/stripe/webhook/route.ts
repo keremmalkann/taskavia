@@ -1,5 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { paymentsEnabled } from '@/lib/features'
+import { apiError } from '@/lib/http/api-error'
+import { ErrorCodes, reportServerError } from '@/lib/observability/server'
 
 function safeEqual(a: string, b: string) {
   if (a.length !== b.length) return false
@@ -27,15 +29,16 @@ export async function POST(request: Request) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET
   const signature = request.headers.get('stripe-signature')
   const admin = createAdminClient()
-  if (!secret || !signature || !admin) return new Response('Webhook yapılandırılmamış', { status: 503 })
+  if (!secret || !signature || !admin) return apiError(ErrorCodes.stripeNotConfigured, 'Webhook yapılandırılmamış.', 503)
 
   const payload = await request.text()
-  if (!(await verifyStripeSignature(payload, signature, secret))) return new Response('Geçersiz imza', { status: 400 })
+  if (!(await verifyStripeSignature(payload, signature, secret))) return apiError(ErrorCodes.stripeSignatureInvalid, 'Geçersiz imza.', 400)
 
-  const event = JSON.parse(payload) as {
+  const event = await Promise.resolve().then(() => JSON.parse(payload)).catch(() => null) as {
     type: string
     data: { object: { id: string; payment_intent?: string; amount_total?: number; metadata?: { proposal_id?: string } } }
-  }
+  } | null
+  if (!event?.type || !event.data?.object) return apiError(ErrorCodes.stripePayloadInvalid, 'Geçersiz webhook gövdesi.', 400)
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object
@@ -48,7 +51,7 @@ export async function POST(request: Request) {
         .single()
       const job = Array.isArray(proposal?.jobs) ? proposal.jobs[0] : proposal?.jobs
       if (proposal && job) {
-        await admin.from('payments').upsert({
+        const { error } = await admin.from('payments').upsert({
           proposal_id: proposal.id,
           employer_id: job.employer_id,
           freelancer_id: proposal.freelancer_id,
@@ -58,6 +61,14 @@ export async function POST(request: Request) {
           stripe_payment_intent_id: session.payment_intent ?? null,
           status: 'funded',
         }, { onConflict: 'proposal_id' })
+        if (error) {
+          const eventId = await reportServerError(error, {
+            code: ErrorCodes.stripeWriteFailed,
+            event: 'payment.webhook_write_failed',
+            context: { stripeEventType: event.type, proposalId: proposal.id },
+          })
+          return Response.json({ error: 'Ödeme durumu kaydedilemedi.', code: ErrorCodes.stripeWriteFailed, eventId }, { status: 500 })
+        }
       }
     }
   }

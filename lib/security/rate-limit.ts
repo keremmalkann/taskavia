@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { headers } from 'next/headers'
+import { ErrorCodes, reportServerError } from '@/lib/observability/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 type RateLimitRule = { scope: string; identifier: string; maxAttempts: number; windowSeconds: number }
@@ -29,7 +30,12 @@ export async function consumeAnonymousRateLimit(rule: RateLimitRule) {
   })
 
   if (error) {
-    console.error('Rate limit could not be checked', { scope: rule.scope, code: error.code })
+    await reportServerError(error, {
+      code: ErrorCodes.rateLimitCheckFailed,
+      event: 'security.rate_limit_check_failed',
+      severity: 'warning',
+      context: { scope: rule.scope, providerCode: error.code },
+    })
     return { allowed: true, retryAfterSeconds: 0 }
   }
   const result = Array.isArray(data) ? data[0] : data

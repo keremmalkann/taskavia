@@ -16,6 +16,7 @@ Taskavia, işverenlerle freelancer'ları proje ilanları, teklifler, mesajlaşma
 - Karşılıklı değerlendirme akışı
 - Profil gizliliği ve hesap ayarları
 - Yönetici erişimi ve temel moderasyon işlemleri
+- Hassas verileri maskeleyen yapılandırılmış hata kayıtları ve kullanıcı hata referansları
 
 ## Teknoloji
 
@@ -67,6 +68,19 @@ npm run build:next   # Next.js üretim derlemesi
 ```
 
 Uçtan uca test gerçek veritabanına yazdığı için yalnızca ayrı bir test projesinde ve `supabase/README.md` içindeki güvenlik kilitleriyle çalıştırılmalıdır.
+
+## Hata izleme
+
+Beklenmeyen sunucu ve tarayıcı hataları, her olay için benzersiz bir `TVA-...` referansıyla yapılandırılmış JSON loglarına yazılır. Parola, oturum, token, e-posta ve yetkilendirme verileri kaydedilmeden önce maskelenir.
+
+İsteğe bağlı olarak temizlenmiş hata olayları harici bir gözlemleme servisine iletilebilir:
+
+```dotenv
+ERROR_REPORTING_WEBHOOK_URL=https://observability.example.com/taskavia-errors
+ERROR_REPORTING_WEBHOOK_TOKEN=
+```
+
+Webhook tanımlanmadığında yerel ve platform sunucu logları kullanılmaya devam eder.
 
 ## Ortam değişkenleri ve güvenlik
 
