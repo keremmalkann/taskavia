@@ -17,8 +17,9 @@ function one<T>(value: T | T[] | null | undefined) {
   return Array.isArray(value) ? value[0] : value
 }
 
-export default async function MessagesPage({ searchParams }: { searchParams: Promise<{ error?: string; message?: string }> }) {
+export default async function MessagesPage({ searchParams }: { searchParams: Promise<{ error?: string; message?: string; q?: string }> }) {
   const feedback = await searchParams
+  const query = String(feedback.q ?? '').trim().slice(0, 100)
   const { supabase, user, role, fullName } = await requireUser()
   const { data, error } = await supabase
     .from('proposals')
@@ -49,19 +50,28 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
     }
   }
 
+  const conversationViews = conversations.map((conversation) => {
+    const job = one(conversation.job)
+    const freelancer = one(conversation.freelancer)
+    const employer = one(job?.employer)
+    const counterpart = role === 'employer'
+      ? freelancer?.full_name || 'Freelancer'
+      : employer?.company_name || employer?.full_name || 'İşveren'
+    const latest = latestByProposal.get(conversation.id)
+    const preview = latest ? `${latest.sender_id === user.id ? 'Sen: ' : ''}${latest.body || 'Dosya gönderildi'}` : 'Henüz mesaj yok. İlk mesajı gönder.'
+    return { conversation, job, counterpart, latest, preview }
+  })
+  const normalizedQuery = query.toLocaleLowerCase('tr-TR')
+  const filteredConversations = normalizedQuery
+    ? conversationViews.filter(({ counterpart, job, preview }) => `${counterpart} ${job?.title ?? ''} ${preview}`.toLocaleLowerCase('tr-TR').includes(normalizedQuery))
+    : conversationViews
+
   return <MarketplaceShell name={fullName} role={role} active="messages">
     <Feedback {...feedback} />
     <div className="workspace-head messages-head"><div><p>MESAJLAR</p><h1>Konuşmaların</h1><span>Aktif projelerindeki işveren ve freelancer görüşmelerine buradan ulaş.</span></div></div>
-    {error ? <SetupNotice /> : conversations.length > 0 ? <section className="conversation-list" aria-label="Konuşmalar">
-      {conversations.map((conversation) => {
-        const job = one(conversation.job)
-        const freelancer = one(conversation.freelancer)
-        const employer = one(job?.employer)
-        const counterpart = role === 'employer'
-          ? freelancer?.full_name || 'Freelancer'
-          : employer?.company_name || employer?.full_name || 'İşveren'
-        const latest = latestByProposal.get(conversation.id)
-        const preview = latest ? `${latest.sender_id === user.id ? 'Sen: ' : ''}${latest.body}` : 'Henüz mesaj yok. İlk mesajı gönder.'
+    {!error && conversations.length > 0 && <form className="conversation-search" action="/messages" role="search"><span aria-hidden="true">⌕</span><input name="q" type="search" defaultValue={query} placeholder="Kişi, proje veya mesaj ara" aria-label="Konuşmalarda ara" /><button type="submit">Ara</button>{query && <Link href="/messages">Temizle</Link>}</form>}
+    {error ? <SetupNotice /> : filteredConversations.length > 0 ? <section className="conversation-list" aria-label="Konuşmalar">
+      {filteredConversations.map(({ conversation, job, counterpart, latest, preview }) => {
         const updatedAt = latest?.created_at || conversation.updated_at
         const unreadCount = unreadByProposal.get(conversation.id) ?? 0
         const initials = counterpart.split(' ').slice(0, 2).map((part) => part[0]).join('').toLocaleUpperCase('tr-TR')
@@ -72,6 +82,6 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
           <span className="conversation-meta"><time>{formatNotificationTime(updatedAt)}</time>{unreadCount > 0 && <strong aria-label={`${unreadCount} okunmamış mesaj`}>{Math.min(unreadCount, 99)}{unreadCount > 99 ? '+' : ''}</strong>}<b aria-hidden="true">→</b></span>
         </Link>
       })}
-    </section> : <div className="marketplace-empty"><strong>Henüz aktif konuşman yok</strong><p>Bir teklif kabul edildiğinde proje konuşman burada görünecek.</p></div>}
+    </section> : <div className="marketplace-empty"><strong>{query ? 'Konuşma bulunamadı' : 'Henüz aktif konuşman yok'}</strong><p>{query ? 'Başka bir kişi, proje veya mesaj kelimesiyle tekrar ara.' : 'Bir teklif kabul edildiğinde proje konuşman burada görünecek.'}</p></div>}
   </MarketplaceShell>
 }

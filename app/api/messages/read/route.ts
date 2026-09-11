@@ -26,6 +26,17 @@ export async function POST(request: Request) {
   if (!proposal) return apiError(ErrorCodes.conversationNotFound, 'Konuşma bulunamadı.', 404)
 
   const readAt = new Date().toISOString()
+  const { data: databaseReadAt, error: readError } = await supabase.rpc('mark_conversation_read', {
+    target_proposal_id: proposalId,
+  })
+  if (readError && readError.code !== 'PGRST202') {
+    const eventId = await reportServerError(readError, {
+      code: ErrorCodes.messageReadFailed,
+      event: 'message.database_read_state_write_failed',
+      context: { proposalId, userId: user.id },
+    })
+    return Response.json({ error: 'Okunma durumu kaydedilemedi.', code: ErrorCodes.messageReadFailed, eventId }, { status: 500 })
+  }
   const messageReads = withMessageRead(getMessageReads(user.user_metadata), proposalId, readAt)
   const { error } = await supabase.auth.updateUser({ data: { message_reads: messageReads } })
   if (error) {
@@ -37,5 +48,5 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Okunma durumu kaydedilemedi.', code: ErrorCodes.messageReadFailed, eventId }, { status: 500 })
   }
 
-  return Response.json({ ok: true, readAt })
+  return Response.json({ ok: true, readAt: databaseReadAt ?? readAt, databaseBacked: !readError })
 }

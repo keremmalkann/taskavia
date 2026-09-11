@@ -11,7 +11,7 @@ Taskavia, işverenlerle freelancer'ları proje ilanları, teklifler, mesajlaşma
 - İlan taslağı, yayın önizlemesi ve gelişmiş bütçe/tarih sıralaması
 - Teklif gönderme, aday sıralama, özel aday notları, kabul ve reddetme
 - İş durumu ve tamamlanma takibi
-- Katılımcılara özel gerçek zamanlı mesajlaşma
+- Katılımcılara özel gerçek zamanlı mesajlaşma, yazıyor göstergesi, okundu bilgisi, konuşma araması ve güvenli dosya paylaşımı
 - Okunmamış mesaj ve bildirim yönetimi
 - Profil, portföy ve özel erişimli özgeçmiş yükleme
 - Karşılıklı değerlendirme akışı

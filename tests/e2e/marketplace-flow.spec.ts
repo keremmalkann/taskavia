@@ -127,8 +127,17 @@ test.describe('Taskavia ana pazar yeri akışı', () => {
         await employerPage.getByRole('button', { name: 'Mesajı gönder' }).click()
         await expect(employerPage.getByText('Merhaba, başlangıç planını bugün netleştirelim.')).toBeVisible()
 
+        await employerPage.getByLabel('Dosya ekle').setInputFiles({
+          name: 'teslim-plani.txt',
+          mimeType: 'text/plain',
+          buffer: Buffer.from('Taskavia Playwright teslim planı'),
+        })
+        await employerPage.getByRole('button', { name: 'Mesajı gönder' }).click()
+        await expect(employerPage.getByText('teslim-plani.txt')).toBeVisible()
+
         await freelancerPage.goto(workspacePath)
         await expect(freelancerPage.getByText('Merhaba, başlangıç planını bugün netleştirelim.')).toBeVisible()
+        await expect(freelancerPage.getByText('teslim-plani.txt')).toBeVisible()
         await freelancerPage.getByLabel('Mesaj').fill('Uygun, ilk teslimat planını bugün paylaşacağım.')
         await freelancerPage.getByRole('button', { name: 'Mesajı gönder' }).click()
         await expect(freelancerPage.getByText('Uygun, ilk teslimat planını bugün paylaşacağım.')).toBeVisible()
@@ -156,16 +165,25 @@ test.describe('Taskavia ana pazar yeri akışı', () => {
         await expect(freelancerPage.getByText('Değerlendirmen yayınlandı.')).toBeVisible()
       })
 
-      const [{ data: job }, { count: messageCount }, { count: reviewCount }, { count: candidateNoteCount }] = await Promise.all([
+      await expect.poll(async () => {
+        const { count } = await admin.from('messages').select('id', { count: 'exact', head: true }).eq('proposal_id', workspacePath.split('/').at(-1)!).is('read_at', null)
+        return count
+      }).toBe(0)
+
+      const [{ data: job }, { count: messageCount }, { count: reviewCount }, { count: candidateNoteCount }, { data: attachmentRows }] = await Promise.all([
         admin.from('jobs').select('status').eq('id', jobId!).single(),
         admin.from('messages').select('id', { count: 'exact', head: true }).eq('proposal_id', workspacePath.split('/').at(-1)!),
         admin.from('reviews').select('id', { count: 'exact', head: true }).eq('job_id', jobId!),
         admin.from('proposal_notes').select('proposal_id', { count: 'exact', head: true }).eq('proposal_id', workspacePath.split('/').at(-1)!),
+        admin.from('messages').select('attachment_path').eq('proposal_id', workspacePath.split('/').at(-1)!).not('attachment_path', 'is', null),
       ])
       expect(job?.status).toBe('completed')
-      expect(messageCount).toBe(2)
+      expect(messageCount).toBe(3)
       expect(reviewCount).toBe(2)
       expect(candidateNoteCount).toBe(1)
+      const attachmentPaths = (attachmentRows ?? []).flatMap((row) => row.attachment_path ? [row.attachment_path] : [])
+      expect(attachmentPaths).toHaveLength(1)
+      if (attachmentPaths.length) await admin.storage.from('message-attachments').remove(attachmentPaths)
     } finally {
       await employerContext.close()
       await freelancerContext.close()

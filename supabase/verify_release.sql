@@ -26,8 +26,16 @@ with release_checks(name, passed, detail) as (
     ('complete job rpc', to_regprocedure('public.complete_job(uuid)') is not null, 'İş tamamlama'),
     ('rate limit rpc', to_regprocedure('public.consume_rate_limit(text,integer,integer)') is not null, 'Atomik işlem hız sınırlama'),
     ('report rpc', to_regprocedure('public.submit_safety_report(text,uuid,text,text)') is not null, 'Yetki kontrollü şikâyet gönderimi'),
+    ('message read rpc', to_regprocedure('public.mark_conversation_read(uuid)') is not null, 'Gerçek mesaj okunma durumu'),
     ('private portfolios bucket', exists(select 1 from storage.buckets where id = 'portfolios' and not public), 'Görünürlük kontrollü portföy dosyaları'),
     ('private resumes bucket', exists(select 1 from storage.buckets where id = 'resumes' and not public), 'Özel özgeçmiş dosyaları'),
+    ('private message attachments bucket', exists(select 1 from storage.buckets where id = 'message-attachments' and not public), 'Katılımcılara özel mesaj dosyaları'),
+    ('message attachment columns', (
+      select count(*) = 4
+      from information_schema.columns
+      where table_schema = 'public' and table_name = 'messages'
+        and column_name in ('attachment_path', 'attachment_name', 'attachment_type', 'attachment_size')
+    ), 'Mesaj dosyası meta verileri'),
     ('messages realtime', exists(
       select 1 from pg_publication_tables
       where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'messages'

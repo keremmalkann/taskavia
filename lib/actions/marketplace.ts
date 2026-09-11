@@ -26,6 +26,17 @@ const portfolioTypes: Record<string, string> = {
   'application/pdf': 'pdf',
 }
 
+const messageAttachmentTypes: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'application/pdf': 'pdf',
+  'text/plain': 'txt',
+  'application/zip': 'zip',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+}
+
 async function sendJobCompletedEmail(proposalId: string, freelancerId: string, jobTitle: string) {
   await sendNotificationEmail({
     recipientId: freelancerId,
@@ -509,14 +520,51 @@ export async function completeJobFromWorkspace(proposalId: string, jobId: string
 export async function sendMessage(proposalId: string, formData: FormData) {
   const { supabase, user, fullName } = await requireUser()
   const body = text(formData, 'body')
-  if (!body) go(`/messages/${proposalId}`, 'error', 'Mesaj boş olamaz.')
+  const attachment = formData.get('attachment')
+  const file = attachment instanceof File && attachment.size > 0 ? attachment : null
+  if (!body && !file) go(`/messages/${proposalId}`, 'error', 'Bir mesaj yaz veya dosya ekle.')
+  if (body.length > 3000) go(`/messages/${proposalId}`, 'error', 'Mesaj en fazla 3000 karakter olabilir.')
+  if (file && file.size > 10 * 1024 * 1024) go(`/messages/${proposalId}`, 'error', 'Dosya en fazla 10 MB olabilir.')
+  const extension = file ? messageAttachmentTypes[file.type] : null
+  if (file && !extension) go(`/messages/${proposalId}`, 'error', 'Bu dosya türü desteklenmiyor.')
+
+  const { data: proposal } = await supabase
+    .from('proposals')
+    .select('job_id, freelancer_id, status')
+    .eq('id', proposalId)
+    .eq('status', 'accepted')
+    .maybeSingle()
+  if (!proposal) go(`/messages/${proposalId}`, 'error', 'Bu konuşmada mesaj gönderme yetkin yok.')
+
+  let attachmentPath: string | null = null
+  if (file && extension) {
+    attachmentPath = `${proposalId}/${user.id}/${crypto.randomUUID()}.${extension}`
+    const { error: uploadError } = await supabase.storage
+      .from('message-attachments')
+      .upload(attachmentPath, file, { contentType: file.type, upsert: false })
+    if (uploadError) go(`/messages/${proposalId}`, 'error', 'Dosya yüklenemedi. Mesajlaşma migration dosyasını kontrol et.')
+  }
+
+  const messageRecord: Record<string, string | number | null> = {
+    proposal_id: proposalId,
+    sender_id: user.id,
+    body,
+  }
+  if (file && attachmentPath) Object.assign(messageRecord, {
+    attachment_path: attachmentPath,
+    attachment_name: file.name.slice(0, 180),
+    attachment_type: file.type,
+    attachment_size: file.size,
+  })
   const { data: message, error } = await supabase
     .from('messages')
-    .insert({ proposal_id: proposalId, sender_id: user.id, body })
+    .insert(messageRecord)
     .select('id')
     .single()
-  if (error) go(`/messages/${proposalId}`, 'error', messageFromError(error, 'Mesaj gönderilemedi.'))
-  const { data: proposal } = await supabase.from('proposals').select('job_id, freelancer_id').eq('id', proposalId).maybeSingle()
+  if (error) {
+    if (attachmentPath) await supabase.storage.from('message-attachments').remove([attachmentPath])
+    go(`/messages/${proposalId}`, 'error', messageFromError(error, 'Mesaj gönderilemedi.'))
+  }
   if (proposal) {
     const { data: job } = await supabase.from('jobs').select('employer_id, title').eq('id', proposal.job_id).maybeSingle()
     const recipientId = job ? (user.id === proposal.freelancer_id ? job.employer_id : proposal.freelancer_id) : null
@@ -526,7 +574,7 @@ export async function sendMessage(proposalId: string, formData: FormData) {
       eventKey: `message-${message.id}`,
       subject: `${fullName} sana mesaj gönderdi`,
       heading: 'Yeni bir mesajın var.',
-      body: `“${job.title}” çalışma alanında ${fullName}: ${body.slice(0, 240)}${body.length > 240 ? '…' : ''}`,
+      body: `“${job.title}” çalışma alanında ${fullName}: ${body ? `${body.slice(0, 240)}${body.length > 240 ? '…' : ''}` : `${file?.name ?? 'Dosya'} dosyasını paylaştı.`}`,
       ctaLabel: 'Mesajı aç',
       ctaPath: `/messages/${proposalId}`,
     })

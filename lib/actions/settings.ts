@@ -104,6 +104,20 @@ export async function deleteAccount(formData: FormData) {
     if (error) go('error', 'Özgeçmiş dosyası silinemedi. Lütfen tekrar dene.')
   }
 
+  const { data: messageAttachments, error: messageAttachmentError } = await admin
+    .from('messages')
+    .select('attachment_path')
+    .eq('sender_id', user.id)
+    .not('attachment_path', 'is', null)
+  if (messageAttachmentError && !['42703', 'PGRST204'].includes(messageAttachmentError.code ?? '')) {
+    go('error', 'Mesaj dosyaları silme işlemine hazırlanamadı. Lütfen tekrar dene.')
+  }
+  const messageAttachmentPaths = (messageAttachments ?? []).flatMap((message) => message.attachment_path ? [message.attachment_path] : [])
+  if (messageAttachmentPaths.length) {
+    const { error } = await admin.storage.from('message-attachments').remove(messageAttachmentPaths)
+    if (error) go('error', 'Mesaj dosyaları silinemedi. Lütfen tekrar dene.')
+  }
+
   const { error: paymentError } = await admin
     .from('payments')
     .delete()
