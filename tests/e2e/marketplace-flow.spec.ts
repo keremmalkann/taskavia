@@ -84,6 +84,9 @@ test.describe('Taskavia ana pazar yeri akışı', () => {
         await employerPage.getByLabel('Maksimum bütçe').fill('3500')
         const deadline = new Date(Date.now() + 30 * 86400_000).toISOString().slice(0, 10)
         await employerPage.getByLabel('Son tarih').fill(deadline)
+        await employerPage.getByRole('button', { name: 'İlanı önizle' }).click()
+        await expect(employerPage.getByRole('dialog').getByRole('heading', { name: uniqueTitle })).toBeVisible()
+        await employerPage.getByRole('button', { name: 'Düzenlemeye dön' }).click()
         await employerPage.getByRole('button', { name: 'İlanı yayınla' }).click()
         await expect(employerPage).toHaveURL(/\/jobs\/[0-9a-f-]+/i)
         await expect(employerPage.getByRole('heading', { name: uniqueTitle })).toBeVisible()
@@ -94,6 +97,8 @@ test.describe('Taskavia ana pazar yeri akışı', () => {
 
       await test.step('Freelancer teklif verir', async () => {
         await login(freelancerPage, freelancer)
+        await freelancerPage.goto(`/jobs?q=${encodeURIComponent(uniqueTitle)}&maxBudget=3500&sort=newest`)
+        await expect(freelancerPage.getByRole('heading', { name: uniqueTitle })).toBeVisible()
         await freelancerPage.goto(`/jobs/${jobId}`)
         await freelancerPage.getByLabel('Teklif tutarı').fill('2400')
         await freelancerPage.getByLabel('Teslim süresi').fill('8')
@@ -105,6 +110,9 @@ test.describe('Taskavia ana pazar yeri akışı', () => {
       let workspacePath = ''
       await test.step('İşveren teklifi kabul eder', async () => {
         await employerPage.goto(`/employer/jobs/${jobId}/proposals`)
+        await employerPage.getByLabel('ÖZEL ADAY NOTUN').fill('Teknik kapsamı doğru anlamış; ilk görüşmede teslim planı sorulacak.')
+        await employerPage.getByRole('button', { name: 'Notu kaydet' }).click()
+        await expect(employerPage.getByText('Aday notu kaydedildi.')).toBeVisible()
         await expect(employerPage.getByRole('button', { name: 'Teklifi kabul et' })).toBeVisible()
         await employerPage.getByRole('button', { name: 'Teklifi kabul et' }).click()
         await expect(employerPage.getByText('Teklif kabul edildi. Mesajlaşma artık açık.')).toBeVisible()
@@ -148,14 +156,16 @@ test.describe('Taskavia ana pazar yeri akışı', () => {
         await expect(freelancerPage.getByText('Değerlendirmen yayınlandı.')).toBeVisible()
       })
 
-      const [{ data: job }, { count: messageCount }, { count: reviewCount }] = await Promise.all([
+      const [{ data: job }, { count: messageCount }, { count: reviewCount }, { count: candidateNoteCount }] = await Promise.all([
         admin.from('jobs').select('status').eq('id', jobId!).single(),
         admin.from('messages').select('id', { count: 'exact', head: true }).eq('proposal_id', workspacePath.split('/').at(-1)!),
         admin.from('reviews').select('id', { count: 'exact', head: true }).eq('job_id', jobId!),
+        admin.from('proposal_notes').select('proposal_id', { count: 'exact', head: true }).eq('proposal_id', workspacePath.split('/').at(-1)!),
       ])
       expect(job?.status).toBe('completed')
       expect(messageCount).toBe(2)
       expect(reviewCount).toBe(2)
+      expect(candidateNoteCount).toBe(1)
     } finally {
       await employerContext.close()
       await freelancerContext.close()

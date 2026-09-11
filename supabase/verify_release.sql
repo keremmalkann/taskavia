@@ -11,6 +11,7 @@ with release_checks(name, passed, detail) as (
     ('user blocks table', to_regclass('public.user_blocks') is not null, 'İki yönlü kullanıcı engelleme'),
     ('safety reports table', to_regclass('public.safety_reports') is not null, 'Yönetici inceleme kuyruğu'),
     ('rate limit table', to_regclass('public.rate_limit_buckets') is not null, 'Merkezi hız sınırlama kayıtları'),
+    ('proposal notes table', to_regclass('public.proposal_notes') is not null, 'İşverene özel aday notları'),
     ('reviews table', to_regclass('public.reviews') is not null, 'Değerlendirme kayıtları'),
     ('job revisions table', to_regclass('public.job_revisions') is not null, 'İlan düzenleme geçmişi'),
     ('proposal edit rpc', to_regprocedure('public.change_pending_proposal(uuid,timestamptz,text,numeric,integer,text)') is not null, 'Teklif düzenleme ve geri çekme'),
@@ -38,7 +39,7 @@ with release_checks(name, passed, detail) as (
     ), 'Profil görünürlüğü veritabanı alanı'),
     ('core tables use rls', not exists(
       select 1
-      from (values ('profiles'), ('portfolio_items'), ('jobs'), ('proposals'), ('messages'), ('payments'), ('reviews'), ('user_blocks'), ('safety_reports'), ('rate_limit_buckets')) expected(tablename)
+      from (values ('profiles'), ('portfolio_items'), ('jobs'), ('proposals'), ('proposal_notes'), ('messages'), ('payments'), ('reviews'), ('user_blocks'), ('safety_reports'), ('rate_limit_buckets')) expected(tablename)
       where not exists (
         select 1
         from pg_class c

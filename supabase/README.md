@@ -11,6 +11,7 @@
    7. `migrations/20260910150000_safe_job_archiving.sql`
    8. `migrations/20260910180000_job_search.sql`
    9. `migrations/20260911120000_abuse_protection.sql`
+   10. `migrations/20260911160000_candidate_notes.sql`
 3. Authentication → URL Configuration altında canlı site adresini izinli yönlendirme adreslerine ekleyin.
 4. Storage altında özel erişimli `portfolios` ve `resumes` bucket'larının oluştuğunu doğrulayın. Portföy bağlantıları profil görünürlüğüne göre süreli olarak imzalanır; bucket public bırakılmamalıdır.
 5. Realtime → Publications altında `messages` tablosunun etkin olduğunu doğrulayın.

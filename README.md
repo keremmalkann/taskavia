@@ -8,7 +8,8 @@ Taskavia, işverenlerle freelancer'ları proje ilanları, teklifler, mesajlaşma
 
 - İşveren ve freelancer rollerine özel kayıt ve panel akışları
 - Kategori bazlı ilan oluşturma, arama ve filtreleme
-- Teklif gönderme, inceleme, kabul ve reddetme
+- İlan taslağı, yayın önizlemesi ve gelişmiş bütçe/tarih sıralaması
+- Teklif gönderme, aday sıralama, özel aday notları, kabul ve reddetme
 - İş durumu ve tamamlanma takibi
 - Katılımcılara özel gerçek zamanlı mesajlaşma
 - Okunmamış mesaj ve bildirim yönetimi

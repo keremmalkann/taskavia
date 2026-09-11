@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { Feedback, MarketplaceShell, SetupNotice } from '@/app/marketplace-shell'
 import { PendingSubmitButton } from '@/app/pending-submit-button'
 import { acceptProposal, rejectProposal } from '@/lib/actions/marketplace'
+import { saveCandidateNote } from '@/lib/actions/candidate-notes'
 import { requireRole } from '@/lib/auth/role'
 import { formatCurrency, formatDate } from '@/lib/marketplace'
 
@@ -37,7 +38,10 @@ const statusLabel: Record<string, string> = {
   rejected: 'Reddedildi',
 }
 
-export default async function ProposalComparisonPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; message?: string }> }) {
+const proposalSorts = ['recommended', 'newest', 'price_asc', 'duration_asc', 'rating_desc', 'match_desc'] as const
+type ProposalSort = (typeof proposalSorts)[number]
+
+export default async function ProposalComparisonPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; message?: string; sort?: string }> }) {
   const [{ id }, feedback] = await Promise.all([params, searchParams])
   const { supabase, user, fullName } = await requireRole('employer')
   const { data: job, error: jobError } = await supabase
@@ -59,12 +63,13 @@ export default async function ProposalComparisonPage({ params, searchParams }: {
 
   const proposals = ((proposalData ?? []) as Proposal[]).filter((proposal) => proposal.status !== 'withdrawn')
   const freelancerIds = proposals.map((proposal) => proposal.freelancer_id)
-  const [{ data: reviews }, { data: portfolioItems }] = freelancerIds.length
+  const [{ data: reviews }, { data: portfolioItems }, { data: candidateNotes, error: candidateNotesError }] = freelancerIds.length
     ? await Promise.all([
       supabase.from('reviews').select('reviewee_id, rating').in('reviewee_id', freelancerIds),
       supabase.from('portfolio_items').select('profile_id').in('profile_id', freelancerIds),
+      supabase.from('proposal_notes').select('proposal_id, note').in('proposal_id', proposals.map((proposal) => proposal.id)),
     ])
-    : [{ data: [] }, { data: [] }]
+    : [{ data: [] }, { data: [] }, { data: [], error: null }]
 
   const reviewSummary = new Map<string, { total: number; count: number }>()
   reviews?.forEach((review) => {
@@ -73,6 +78,28 @@ export default async function ProposalComparisonPage({ params, searchParams }: {
   })
   const portfolioCounts = new Map<string, number>()
   portfolioItems?.forEach((item) => portfolioCounts.set(item.profile_id, (portfolioCounts.get(item.profile_id) ?? 0) + 1))
+  const noteByProposal = new Map(candidateNotes?.map((item) => [item.proposal_id, item.note]) ?? [])
+
+  const selectedSort: ProposalSort = proposalSorts.includes(feedback.sort as ProposalSort) ? feedback.sort as ProposalSort : 'recommended'
+  const proposalStats = (proposal: Proposal) => {
+    const freelancer = Array.isArray(proposal.freelancer) ? proposal.freelancer[0] : proposal.freelancer
+    const review = reviewSummary.get(proposal.freelancer_id)
+    const rating = review ? review.total / review.count : 0
+    const matches = freelancer?.skills?.filter((skill) => job?.skills?.some((wanted: string) => wanted.toLocaleLowerCase('tr-TR') === skill.toLocaleLowerCase('tr-TR'))).length ?? 0
+    return { rating, matches, portfolio: portfolioCounts.get(proposal.freelancer_id) ?? 0 }
+  }
+  const sortedProposals = [...proposals].sort((a, b) => {
+    if (selectedSort === 'newest') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    if (selectedSort === 'price_asc') return Number(a.price) - Number(b.price)
+    if (selectedSort === 'duration_asc') return Number(a.duration_days) - Number(b.duration_days)
+    if (selectedSort === 'rating_desc') return proposalStats(b).rating - proposalStats(a).rating
+    if (selectedSort === 'match_desc') return proposalStats(b).matches - proposalStats(a).matches
+    const aStats = proposalStats(a)
+    const bStats = proposalStats(b)
+    const aScore = aStats.matches * 10 + aStats.rating * 2 + Math.min(aStats.portfolio, 5) - Number(a.price) / Math.max(Number(job?.budget_max ?? 1), 1)
+    const bScore = bStats.matches * 10 + bStats.rating * 2 + Math.min(bStats.portfolio, 5) - Number(b.price) / Math.max(Number(job?.budget_max ?? 1), 1)
+    return bScore - aScore
+  })
 
   const lowestPrice = proposals.length ? Math.min(...proposals.map((proposal) => Number(proposal.price))) : 0
   const shortestDuration = proposals.length ? Math.min(...proposals.map((proposal) => Number(proposal.duration_days))) : 0
@@ -97,8 +124,15 @@ export default async function ProposalComparisonPage({ params, searchParams }: {
 
       {accepted && <div className="comparison-accepted"><div><span>SEÇİM TAMAMLANDI</span><strong>{(Array.isArray(accepted.freelancer) ? accepted.freelancer[0] : accepted.freelancer)?.full_name} ile çalışma başladı.</strong></div><Link href={`/messages/${accepted.id}`}>Çalışma alanına git →</Link></div>}
 
+      {proposals.length > 1 && <form className="proposal-sort-bar" method="get">
+        <div><strong>Adayları sırala</strong><span>Karar verirken teklifin yanında deneyim ve beceri eşleşmesini de değerlendir.</span></div>
+        <label>Sıralama<select name="sort" defaultValue={selectedSort}><option value="recommended">Önerilen sıralama</option><option value="newest">En yeni teklif</option><option value="price_asc">En düşük fiyat</option><option value="duration_asc">En kısa teslim</option><option value="rating_desc">En yüksek puan</option><option value="match_desc">En fazla beceri eşleşmesi</option></select></label>
+        <button type="submit">Uygula</button>
+      </form>}
+      {candidateNotesError && <p className="candidate-note-setup" role="status">Özel aday notları için son veritabanı migration dosyasını çalıştırmalısın.</p>}
+
       <section className={`comparison-grid ${isSingleProposal ? 'single' : ''}`}>
-        {proposals.map((proposal) => {
+        {sortedProposals.map((proposal) => {
           const freelancer = Array.isArray(proposal.freelancer) ? proposal.freelancer[0] : proposal.freelancer
           const summary = reviewSummary.get(proposal.freelancer_id)
           const averageRating = summary ? (summary.total / summary.count).toFixed(1) : null
@@ -115,6 +149,10 @@ export default async function ProposalComparisonPage({ params, searchParams }: {
             </dl>
             <div className="comparison-skills"><small>BECERİ EŞLEŞMESİ</small><div>{freelancer?.skills?.length ? freelancer.skills.map((skill) => <span key={skill} className={skillMatches.includes(skill) ? 'matched' : ''}>{skill}</span>) : <span>Henüz beceri eklenmemiş</span>}</div></div>
             <div className="comparison-message"><small>ADAYIN MESAJI</small><p>{proposal.message}</p></div>
+            {!candidateNotesError && <form className="candidate-note-form" action={saveCandidateNote.bind(null, job.id, proposal.id)}>
+              <label><span>ÖZEL ADAY NOTUN</span><textarea name="note" rows={3} maxLength={1000} defaultValue={noteByProposal.get(proposal.id) ?? ''} placeholder="Görüşme notu, güçlü yön veya takip edilecek konu…" /></label>
+              <div><small>Bu notu yalnızca sen görebilirsin.</small><PendingSubmitButton pendingLabel="Kaydediliyor…">Notu kaydet</PendingSubmitButton></div>
+            </form>}
             <footer className="comparison-card-footer">
               <div className="comparison-footer-meta"><span>{formatDate(proposal.created_at)} tarihinde gönderildi</span><Link className="comparison-profile-link" href={`/profiles/${proposal.freelancer_id}`}>Profili ve portföyü incele →</Link></div>
               {proposal.status === 'pending' && job.status === 'open' && <div className="comparison-decision-actions" aria-label="Teklif kararı"><form action={rejectProposal.bind(null, job.id, proposal.id, proposal.updated_at)}><PendingSubmitButton className="reject" pendingLabel="Reddediliyor…">Teklifi reddet</PendingSubmitButton></form><form action={acceptProposal.bind(null, job.id, proposal.id, proposal.updated_at)}><PendingSubmitButton className="accept" pendingLabel="Kabul ediliyor…">Teklifi kabul et →</PendingSubmitButton></form></div>}

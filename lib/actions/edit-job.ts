@@ -12,7 +12,7 @@ export async function editJob(id: string, revision: string, form: FormData) {
   }
   const { data, error } = await supabase.from('jobs')
     .update({ title, description })
-    .eq('id', id).eq('employer_id', user.id).eq('status', 'open').eq('updated_at', revision)
+    .eq('id', id).eq('employer_id', user.id).in('status', ['open', 'draft', 'closed']).eq('updated_at', revision)
     .select('id').maybeSingle()
   if (error || !data) return { error: 'Kaydedilemedi. İlan değişmiş veya kapanmış olabilir. Sayfayı yenileyip tekrar dene.' }
   for (const path of ['/jobs', `/jobs/${id}`, '/employer', '/freelancer', '/freelancer/activity', `/employer/jobs/${id}/proposals`]) revalidatePath(path)
