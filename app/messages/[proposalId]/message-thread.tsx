@@ -156,8 +156,12 @@ export function MessageThread({
             <span aria-hidden="true">↗</span>
             <span><b>{message.attachment_name ?? 'Dosya'}</b><small>{formatFileSize(message.attachment_size)}</small></span>
           </a>}
-          <footer><time>{new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }).format(new Date(message.created_at))}</time>{isMine && <span>{message.read_at ? 'Okundu' : 'İletildi'} <i aria-hidden="true">✓{message.read_at ? '✓' : ''}</i></span>}</footer>
-          {!isMine && <SafetyActions compact label="Bildir" returnPath={`/messages/${proposalId}`} subjectType="message" subjectId={message.id} />}
+          <footer>
+            <time>{new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }).format(new Date(message.created_at))}</time>
+            {isMine
+              ? <span>{message.read_at ? 'Okundu' : 'İletildi'} <i aria-hidden="true">✓{message.read_at ? '✓' : ''}</i></span>
+              : <SafetyActions compact label="Bildir" returnPath={`/messages/${proposalId}`} subjectType="message" subjectId={message.id} />}
+          </footer>
         </article>
       })}
       {messages.length === 0 && <div className="marketplace-empty"><p>İlk mesajı göndererek çalışma alanını başlat.</p></div>}
