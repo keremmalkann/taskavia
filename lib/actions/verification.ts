@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { requireUser } from '@/lib/auth/role'
+import { ErrorCodes, reportServerError } from '@/lib/observability/server'
 
 function go(kind: 'error' | 'message', message: string): never {
   redirect(`/profile?${kind}=${encodeURIComponent(message)}#profile-section-06`)
@@ -12,7 +13,26 @@ function normalizePhone(value: string) {
   const compact = value.trim().replace(/[\s().-]/g, '')
   if (/^0\d{10}$/.test(compact)) return `+90${compact.slice(1)}`
   if (/^\d{10}$/.test(compact)) return `+90${compact}`
+  if (/^90\d{10}$/.test(compact)) return `+${compact}`
   return compact
+}
+
+function phoneSendErrorMessage(code?: string) {
+  switch (code) {
+    case 'phone_provider_disabled':
+      return 'SMS sağlayıcısı etkin değil. Supabase telefon sağlayıcısı ayarlarını kontrol et.'
+    case 'phone_exists':
+      return 'Bu telefon numarası başka bir hesap tarafından kullanılıyor. Farklı bir numara dene veya mevcut hesabınla giriş yap.'
+    case 'over_sms_send_rate_limit':
+    case 'over_request_rate_limit':
+      return 'Çok sık doğrulama kodu istendi. 60 saniye bekleyip yeniden dene.'
+    case 'validation_failed':
+      return 'Telefon numarası geçersiz. Türkiye için 05xx xxx xx xx veya +90 5xx xxx xx xx biçimini kullan.'
+    case 'sms_send_failed':
+      return 'SMS sağlayıcısı gönderimi reddetti. Twilio deneme hesabında alıcı numarayı, Messaging Service göndericisini ve Türkiye gönderim iznini kontrol et.'
+    default:
+      return 'SMS gönderilemedi. Twilio bağlantısını ve hesap durumunu kontrol edip yeniden dene.'
+  }
 }
 
 export async function startPhoneVerification(formData: FormData) {
@@ -26,10 +46,18 @@ export async function startPhoneVerification(formData: FormData) {
     data: { ...currentMetadata, pending_phone_verification: phone },
   })
   if (error) {
-    const providerDisabled = error.code === 'phone_provider_disabled' || /phone provider|sms provider/i.test(error.message)
-    go('error', providerDisabled
-      ? 'SMS doğrulama sağlayıcısı henüz etkin değil. Supabase Auth telefon sağlayıcısı açıldığında bu alan çalışacaktır.'
-      : 'Doğrulama kodu gönderilemedi. Numaranı kontrol edip yeniden dene.')
+    const authCode = error.code ?? 'unknown'
+    await reportServerError(new Error(`Supabase phone verification failed: ${authCode}`), {
+      code: ErrorCodes.phoneVerificationFailed,
+      event: 'auth.phone_verification_send_failed',
+      severity: 'warning',
+      context: {
+        authCode,
+        status: error.status ?? null,
+        userId: user.id,
+      },
+    })
+    go('error', phoneSendErrorMessage(error.code))
   }
 
   revalidatePath('/profile')
