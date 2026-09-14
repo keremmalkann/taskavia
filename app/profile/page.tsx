@@ -8,6 +8,7 @@ import { ProfileSectionLink } from '@/app/profile-section-link'
 import { getProfileCompletion } from '@/lib/profile-completion'
 import { resolvePortfolioUrl } from '@/lib/portfolio-files'
 import { paymentsEnabled } from '@/lib/features'
+import { cancelProfileVerification, startPhoneVerification, submitProfileVerification, verifyPhoneCode } from '@/lib/actions/verification'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Profilim — Taskavia', description: 'Taskavia profil bilgilerini, yeteneklerini ve portföyünü yönet.' }
@@ -42,12 +43,19 @@ function ProfileAccordionSummary({ number, title, description, status }: { numbe
 export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ error?: string; message?: string }> }) {
   const params = await searchParams
   const { supabase, user, role, fullName } = await requireUser()
-  const [{ data: profile, error: profileError }, { data: reviews }, { data: portfolio }, { data: resumeProfile, error: resumeError }] = await Promise.all([
+  const [{ data: profile, error: profileError }, { data: reviews }, { data: portfolio }, { data: resumeProfile, error: resumeError }, phoneResult, verificationResult, badgeResult] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
     supabase.from('reviews').select('rating, comment, created_at, reviewer:profiles!reviews_reviewer_id_fkey(full_name)').eq('reviewee_id', user.id).order('created_at', { ascending: false }).limit(5),
     supabase.from('portfolio_items').select('*').eq('profile_id', user.id).order('created_at', { ascending: false }),
     role === 'freelancer' ? supabase.from('profiles').select('resume_path').eq('id', user.id).maybeSingle() : Promise.resolve({ data: null, error: null }),
+    supabase.from('profile_phone_verifications').select('verified_at').eq('profile_id', user.id).maybeSingle(),
+    supabase.from('profile_verification_requests').select('id, kind, label, status, resolution_note, created_at').eq('profile_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+    supabase.from('profile_badges').select('id, kind, label, verified_at').eq('profile_id', user.id).order('verified_at', { ascending: false }),
   ])
+  const phoneVerification = phoneResult.data
+  const verificationRequest = verificationResult.data
+  const badges = badgeResult.data ?? []
+  const verificationSetupError = phoneResult.error || verificationResult.error || badgeResult.error
   const { data: resumeLink } = resumeProfile?.resume_path
     ? await supabase.storage.from('resumes').createSignedUrl(resumeProfile.resume_path, 60 * 60)
     : { data: null }
@@ -98,7 +106,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
             <ProfileAccordionSummary number="01" title="Temel bilgiler" description="Profilinde görünen kişisel veya şirket bilgilerin." status={profile?.bio ? 'Dolu' : 'Eksik bilgi var'} />
             <div className="profile-accordion-body">
               <div className="form-grid two"><label>Ad Soyad<input name="fullName" required minLength={2} defaultValue={profile?.full_name ?? fullName} /></label><label>{role === 'employer' ? 'Pozisyon' : 'Uzmanlık başlığı'}<input name="title" defaultValue={profile?.title ?? ''} placeholder={role === 'employer' ? 'Kurucu, İnsan Kaynakları…' : 'Product Designer, Frontend Developer…'} /></label></div>
-              {role === 'employer' && <label>Şirket adı<input name="companyName" defaultValue={profile?.company_name ?? ''} placeholder="Şirket veya marka adı" /></label>}
+              {role === 'employer' && <><label>Şirket adı<input name="companyName" defaultValue={profile?.company_name ?? ''} placeholder="Şirket veya marka adı" /></label><div className="form-grid two"><label>Sektör<input name="companyIndustry" defaultValue={profile?.company_industry ?? ''} maxLength={120} placeholder="Yazılım, perakende, danışmanlık…" /></label><label>Şehir<input name="companyCity" defaultValue={profile?.company_city ?? ''} maxLength={120} placeholder="İstanbul" /></label></div><div className="form-grid two"><label>Web sitesi<input name="companyWebsite" type="url" defaultValue={profile?.company_website ?? ''} maxLength={300} placeholder="https://sirketiniz.com" /></label><label>Şirket büyüklüğü<select name="companySize" defaultValue={profile?.company_size ?? ''}><option value="">Seçilmedi</option><option value="1">Tek kişi</option><option value="2-10">2–10 kişi</option><option value="11-50">11–50 kişi</option><option value="51-200">51–200 kişi</option><option value="201+">201+ kişi</option></select></label></div></>}
               <label>Hakkında<textarea name="bio" rows={5} maxLength={1500} defaultValue={profile?.bio ?? ''} placeholder="Deneyimini, çalışma biçimini ve hedeflerini anlat." /></label>
             </div>
           </details>
@@ -119,6 +127,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           <div className="profile-completion"><i style={{ width: `${completion.percent}%` }} /></div>
           <div className="profile-large-avatar">{(profile?.full_name ?? fullName).slice(0, 2).toLocaleUpperCase('tr-TR')}</div><h2>{profile?.full_name ?? fullName}</h2><p>{profile?.title ?? (role === 'employer' ? 'İşveren' : 'Freelancer')}</p>
           {role === 'employer' && profile?.company_name && <div className="profile-company-name">{profile.company_name}</div>}
+          {badges.length > 0 && <div className="profile-trust-badges">{badges.map((badge) => <span key={badge.id}>✓ {badge.label}</span>)}</div>}
           {truncateBio(profile?.bio) && <p className="profile-preview-bio">{truncateBio(profile?.bio)}</p>}
           {role === 'freelancer' && profile?.skills?.length ? <div className="profile-preview-skills">{profile.skills.slice(0, 6).map((skill: string) => <span key={skill}>{skill}</span>)}{profile.skills.length > 6 && <span>+{profile.skills.length - 6}</span>}</div> : null}
           {role === 'freelancer' && <div className="profile-mini-stats"><div><strong>{profile?.experience_years ?? 0}</strong><span>yıl deneyim</span></div><div><strong>{profile?.hourly_rate != null ? `₺${profile.hourly_rate}` : '—'}</strong><span>saatlik</span></div><div><strong>{average ?? 'Yeni'}</strong><span>puan</span></div></div>}
@@ -128,6 +137,35 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           <div className="profile-review-list"><h3>Son değerlendirmeler</h3>{reviews?.length ? reviews.map((review, index) => <article key={index}><strong>{'★'.repeat(review.rating)}</strong><p>{review.comment || 'Yorum bırakılmadı.'}</p></article>) : <p>Henüz değerlendirme yok.</p>}</div>
         </aside>
       </div>
+
+      <details className="profile-manager-accordion trust-manager" id="profile-section-06">
+        <ProfileAccordionSummary number={role === 'freelancer' ? '03' : '02'} title="Güven & doğrulama" description="Telefonunu ve mesleki bilgilerini doğrulayarak güven profilini güçlendir." status={badges.length ? `${badges.length} rozet` : 'Doğrulama bekleniyor'} />
+        <div className="profile-manager-accordion-body">
+          {verificationSetupError && <div className="error-message">Güven doğrulama alanı için yeni Supabase migration dosyasını çalıştır.</div>}
+          <div className="trust-manager-grid">
+            <article className="trust-card">
+              <header><span>TELEFON</span><strong className={phoneVerification ? 'verified' : ''}>{phoneVerification ? 'DOĞRULANDI' : 'DOĞRULANMADI'}</strong></header>
+              <h3>{phoneVerification ? 'Telefon doğrulaman tamamlandı' : 'Telefon numaranı doğrula'}</h3>
+              <p>{phoneVerification ? `${user.phone ? `••• ${user.phone.slice(-4)} numaralı telefon` : 'Telefon numaran'} güven profiline eklendi.` : 'Tek kullanımlık SMS koduyla hesabın sana ait olduğunu doğrula.'}</p>
+              {!phoneVerification && <div className="phone-verification-flow">
+                <form action={startPhoneVerification}><label>Telefon numarası<input name="phone" type="tel" inputMode="tel" autoComplete="tel" required placeholder="05xx xxx xx xx" defaultValue={String(user.user_metadata?.pending_phone_verification ?? '')} /></label><button type="submit">Kod gönder →</button></form>
+                {user.user_metadata?.pending_phone_verification && <form action={verifyPhoneCode}><label>6 haneli kod<input name="token" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required placeholder="000000" /></label><button type="submit">Kodu doğrula →</button></form>}
+              </div>}
+            </article>
+            <article className="trust-card">
+              <header><span>{role === 'employer' ? 'ŞİRKET' : 'UZMANLIK'}</span><strong className={badges.some((badge) => badge.kind === (role === 'employer' ? 'company' : 'expertise')) ? 'verified' : ''}>{badges.some((badge) => badge.kind === (role === 'employer' ? 'company' : 'expertise')) ? 'ROZET VAR' : 'BAŞVURU'}</strong></header>
+              <h3>{role === 'employer' ? 'Şirket bilgilerini doğrulat' : 'Uzmanlık rozeti başvurusu'}</h3>
+              {verificationRequest && ['pending', 'reviewing'].includes(verificationRequest.status) ? <div className="verification-pending"><strong>{verificationRequest.status === 'reviewing' ? 'İnceleniyor' : 'Sırada'}</strong><p>“{verificationRequest.label}” başvurun yönetici kuyruğunda.</p>{verificationRequest.status === 'pending' && <form action={cancelProfileVerification.bind(null, verificationRequest.id)}><button type="submit">Başvuruyu iptal et</button></form>}</div> : <form action={submitProfileVerification} className="verification-request-form">
+                {role === 'freelancer' ? <label>Doğrulanacak uzmanlık<select name="label" required defaultValue=""><option value="" disabled>Profilindeki becerilerden seç</option>{(profile?.skills ?? []).map((skill: string) => <option key={skill} value={skill}>{skill}</option>)}</select></label> : <input type="hidden" name="label" value={profile?.company_name ?? ''} />}
+                <label>Kanıt bağlantısı <small>(isteğe bağlı)</small><input name="evidenceUrl" type="url" placeholder={role === 'employer' ? 'Şirket web sitesi veya ticari profil' : 'Sertifika, GitHub veya çalışma bağlantısı'} /></label>
+                <label>İnceleme notu<textarea name="evidenceNote" rows={4} minLength={20} maxLength={1500} required placeholder={role === 'employer' ? 'Şirketle ilişkinizi ve doğrulanabilecek bilgileri açıklayın.' : 'Bu uzmanlığı hangi deneyim ve çalışmalarla kazandığınızı açıklayın.'} /></label>
+                <button type="submit" disabled={role === 'freelancer' ? !(profile?.skills?.length) : !profile?.company_name}>İncelemeye gönder →</button>
+              </form>}
+              {verificationRequest && ['rejected', 'cancelled'].includes(verificationRequest.status) && <p className="verification-history">Son başvuru: {verificationRequest.status === 'rejected' ? `Reddedildi${verificationRequest.resolution_note ? ` — ${verificationRequest.resolution_note}` : ''}` : 'İptal edildi'}</p>}
+            </article>
+          </div>
+        </div>
+      </details>
 
       {role === 'freelancer' && <details className="profile-manager-accordion resume-manager" id="profile-section-04">
         <ProfileAccordionSummary number="04" title="Özgeçmiş" description="Deneyimini tek dosyada paylaş ve güncel tut." status={resumeValid === false ? 'Dosya kayıp' : (resumeProfile?.resume_path ? 'PDF yüklendi' : 'Henüz eklenmedi')} />

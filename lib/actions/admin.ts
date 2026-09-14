@@ -60,3 +60,21 @@ export async function changeReportStatus(reportId: string, operation: 'reviewing
   revalidatePath('/admin')
   go('message', operation === 'resolved' ? 'Şikâyet çözüldü olarak işaretlendi.' : operation === 'dismissed' ? 'Şikâyet kapatıldı.' : 'Şikâyet incelemeye alındı.')
 }
+
+export async function reviewProfileVerification(requestId: string, decision: 'reviewing' | 'approved' | 'rejected', formData: FormData) {
+  const { admin, user } = await requireAdmin()
+  const note = String(formData.get('note') ?? '').trim().slice(0, 1000)
+  if (decision === 'rejected' && note.length < 10) go('error', 'Reddedilen başvuru için en az 10 karakterlik açıklama yazmalısın.')
+
+  const { error } = await admin.rpc('review_profile_verification', {
+    target_request_id: requestId,
+    decision,
+    reviewer_id: user.id,
+    review_note: note || null,
+  })
+  if (error) go('error', 'Doğrulama başvurusu güncellenemedi. Migration kurulumunu veya başvuru durumunu kontrol et.')
+
+  revalidatePath('/admin')
+  revalidatePath('/profile')
+  go('message', decision === 'approved' ? 'Doğrulama onaylandı ve profil rozeti oluşturuldu.' : decision === 'rejected' ? 'Doğrulama başvurusu gerekçesiyle reddedildi.' : 'Doğrulama başvurusu incelemeye alındı.')
+}

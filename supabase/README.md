@@ -13,11 +13,13 @@
    9. `migrations/20260911120000_abuse_protection.sql`
    10. `migrations/20260911160000_candidate_notes.sql`
    11. `migrations/20260911190000_message_experience.sql`
+   12. `migrations/20260914143000_trust_verification.sql`
 3. Authentication → URL Configuration altında canlı site adresini izinli yönlendirme adreslerine ekleyin.
 4. Storage altında özel erişimli `portfolios`, `resumes` ve `message-attachments` bucket'larının oluştuğunu doğrulayın. Portföy ve mesaj dosyası bağlantıları süreli olarak imzalanır; bucket'lar public bırakılmamalıdır.
-5. Realtime → Publications altında `messages` tablosunun etkin olduğunu doğrulayın.
-6. Barındırma ortamında anonim giriş/kayıt limitleri için uzun ve rastgele bir `RATE_LIMIT_SECRET` tanımlayın. `SUPABASE_SERVICE_ROLE_KEY` yalnızca sunucuda tutulmalıdır.
-7. Son olarak SQL Editor'de `verify_release.sql` dosyasını çalıştırın. Sonuçtaki bütün `status` alanları `OK` olmalıdır. `MISSING` bulunan bir ortam yayınlanmamalıdır.
+5. Telefon doğrulamasını kullanmak için Authentication → Providers → Phone altında bir SMS sağlayıcısı yapılandırın. Sağlayıcı kapalıyken diğer güven profili özellikleri çalışmaya devam eder.
+6. Realtime → Publications altında `messages` tablosunun etkin olduğunu doğrulayın.
+7. Barındırma ortamında anonim giriş/kayıt limitleri için uzun ve rastgele bir `RATE_LIMIT_SECRET` tanımlayın. `SUPABASE_SERVICE_ROLE_KEY` yalnızca sunucuda tutulmalıdır.
+8. Son olarak SQL Editor'de `verify_release.sql` dosyasını çalıştırın. Sonuçtaki bütün `status` alanları `OK` olmalıdır. `MISSING` bulunan bir ortam yayınlanmamalıdır.
 
 Yeni bir migration eklendiğinde bu liste ve `verify_release.sql` birlikte güncellenmelidir. Migration'ları atlamak; ilan durum geçişlerinde, teklif kabul/ret işlemlerinde veya dosya erişiminde çalışma zamanı hatalarına yol açar.
 

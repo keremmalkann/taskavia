@@ -37,11 +37,13 @@ export default async function PublicProfilePage({ params, searchParams }: { para
     : { data: null }
   const viewerRole = viewerProfile?.role === 'employer' ? 'employer' : 'freelancer'
   const fullName = viewerProfile?.full_name || user?.user_metadata.full_name || user?.email?.split('@')[0] || 'Taskavia üyesi'
-  const [{ data: profile, error: profileError }, { data: portfolio }, { data: reviews }, { data: resumeProfile }] = await Promise.all([
+  const [{ data: profile, error: profileError }, { data: portfolio }, { data: reviews }, { data: resumeProfile }, { data: badges }, { data: companyDetails }] = await Promise.all([
     supabase.from('profiles').select('id, role, full_name, company_name, title, bio, skills, hourly_rate, experience_years, portfolio_url, created_at').eq('id', id).maybeSingle(),
     supabase.from('portfolio_items').select('id, title, description, file_url, created_at').eq('profile_id', id).order('created_at', { ascending: false }),
     supabase.from('reviews').select('rating, comment, created_at, reviewer:profiles!reviews_reviewer_id_fkey(full_name, company_name)').eq('reviewee_id', id).order('created_at', { ascending: false }),
     user && (viewerRole === 'employer' || user.id === id) ? supabase.from('profiles').select('resume_path').eq('id', id).maybeSingle() : Promise.resolve({ data: null, error: null }),
+    supabase.from('profile_badges').select('id, kind, label, verified_at').eq('profile_id', id).order('verified_at', { ascending: false }),
+    supabase.from('profiles').select('company_website, company_industry, company_size, company_city').eq('id', id).maybeSingle(),
   ])
 
   if (!profile && !profileError) notFound()
@@ -67,7 +69,7 @@ export default async function PublicProfilePage({ params, searchParams }: { para
     {profile && <>
       <header className="public-profile-hero">
         <div className="public-profile-avatar">{profile.full_name.slice(0, 2).toLocaleUpperCase('tr-TR')}</div>
-        <div className="public-profile-identity"><span>{profile.role === 'freelancer' ? 'FREELANCER PROFİLİ' : 'İŞVEREN PROFİLİ'}</span><h1>{displayName}</h1><p>{profile.title || (profile.role === 'freelancer' ? 'Freelancer' : 'İşveren')}</p></div>
+        <div className="public-profile-identity"><span>{profile.role === 'freelancer' ? 'FREELANCER PROFİLİ' : 'İŞVEREN PROFİLİ'}</span><h1>{displayName}</h1><p>{profile.title || (profile.role === 'freelancer' ? 'Freelancer' : 'İşveren')}</p>{badges?.length ? <div className="public-trust-badges">{badges.map((badge) => <span key={badge.id}>✓ {badge.label}</span>)}</div> : null}</div>
         <div className="public-profile-actions">{isOwnProfile ? <Link className="primary" href="/profile">Profili düzenle →</Link> : user ? <><Link href={viewerRole === 'employer' ? '/employer' : '/jobs'}>Geri dön →</Link><SafetyActions compact returnPath={`/profiles/${id}`} subjectType="user" subjectId={id} targetUserId={id} blockedByMe={Boolean(block)} /></> : <Link className="primary" href="/signup">Taskavia&apos;ya katıl →</Link>}</div>
       </header>
 
@@ -78,15 +80,16 @@ export default async function PublicProfilePage({ params, searchParams }: { para
           <div><small>PUAN</small><strong>{average ? `★ ${average}` : 'Yeni'}</strong><span>{reviews?.length ?? 0} değerlendirme</span></div>
           <div><small>PORTFÖY</small><strong>{portfolioWithUrls.length}</strong><span>yayınlanmış çalışma</span></div>
         </> : <>
-          <div><small>ŞİRKET / KİŞİ</small><strong>{profile.company_name || profile.full_name}</strong></div>
-          <div><small>YETKİLİ</small><strong>{profile.full_name}</strong></div>
+          <div><small>SEKTÖR</small><strong>{companyDetails?.company_industry || 'Belirtilmedi'}</strong></div>
+          <div><small>EKİP</small><strong>{companyDetails?.company_size ? `${companyDetails.company_size} kişi` : 'Belirtilmedi'}</strong></div>
+          <div><small>KONUM</small><strong>{companyDetails?.company_city || 'Belirtilmedi'}</strong></div>
           <div><small>TASKAVIA ÜYESİ</small><strong>{formatDate(profile.created_at)}</strong></div>
         </>}
       </section>
 
       <div className="public-profile-body">
         <main>
-          <section className="public-profile-about"><span>HAKKINDA</span><h2>{profile.role === 'freelancer' ? 'Çalışma yaklaşımı' : 'Şirket hakkında'}</h2><p>{profile.bio || 'Bu profil henüz hakkında bilgisi eklemedi.'}</p>{profile.role === 'freelancer' && <div className="public-profile-skills">{profile.skills?.length ? profile.skills.map((skill: string) => <span key={skill}>{skill}</span>) : <span>Henüz beceri eklenmedi</span>}</div>}</section>
+          <section className="public-profile-about"><span>HAKKINDA</span><h2>{profile.role === 'freelancer' ? 'Çalışma yaklaşımı' : 'Şirket hakkında'}</h2><p>{profile.bio || 'Bu profil henüz hakkında bilgisi eklemedi.'}</p>{profile.role === 'freelancer' && <div className="public-profile-skills">{profile.skills?.length ? profile.skills.map((skill: string) => <span key={skill}>{skill}</span>) : <span>Henüz beceri eklenmedi</span>}</div>}{profile.role === 'employer' && companyDetails?.company_website && <a className="company-website-link" href={companyDetails.company_website} target="_blank" rel="noreferrer">Şirket web sitesini aç ↗</a>}</section>
 
           {profile.role === 'freelancer' && <section className="public-portfolio-section"><div className="dashboard-section-title"><div><p>SEÇİLİ ÇALIŞMALAR</p><h2>Portföy</h2></div><span>{portfolioWithUrls.length} çalışma</span></div><div className="public-portfolio-grid">
             {portfolioWithUrls.map((item) => <a key={item.id} href={item.display_url || '#'} target="_blank" rel="noreferrer" aria-disabled={!item.display_url}><div className={`public-portfolio-media ${isPortfolioImage(item.display_url) ? '' : 'document'}`}>{isPortfolioImage(item.display_url) && item.display_url ? <Image src={item.display_url} width={800} height={500} alt={item.title} /> : <><strong>{item.display_url ? 'PDF' : '!'}</strong><span>{item.display_url ? 'Dosyayı incele ↗' : 'Dosya erişilemiyor'}</span></>}</div><div><h3>{item.title}</h3><p>{item.description || 'Açıklama eklenmedi.'}</p><small>{formatDate(item.created_at)}</small></div></a>)}

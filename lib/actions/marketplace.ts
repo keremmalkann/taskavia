@@ -55,6 +55,10 @@ export async function updateProfile(formData: FormData) {
   const fullName = text(formData, 'fullName')
   const title = text(formData, 'title')
   const companyName = text(formData, 'companyName')
+  const companyWebsite = text(formData, 'companyWebsite')
+  const companyIndustry = text(formData, 'companyIndustry')
+  const companySize = text(formData, 'companySize')
+  const companyCity = text(formData, 'companyCity')
   const bio = text(formData, 'bio')
   const hourlyRateValue = text(formData, 'hourlyRate')
   const experienceYearsValue = text(formData, 'experienceYears')
@@ -63,7 +67,9 @@ export async function updateProfile(formData: FormData) {
   const stripeAccountId = text(formData, 'stripeAccountId')
 
   if (fullName.length < 2) go('/profile', 'error', 'Ad soyad en az 2 karakter olmalı.')
-  if (title.length > 120 || companyName.length > 160 || bio.length > 1500) go('/profile', 'error', 'Profil alanlarından biri izin verilen uzunluğu aşıyor.')
+  if (title.length > 120 || companyName.length > 160 || companyIndustry.length > 120 || companyCity.length > 120 || bio.length > 1500) go('/profile', 'error', 'Profil alanlarından biri izin verilen uzunluğu aşıyor.')
+  if (companyWebsite && (!/^https?:\/\/\S+$/i.test(companyWebsite) || companyWebsite.length > 300)) go('/profile', 'error', 'Şirket web sitesi http:// veya https:// ile başlamalı.')
+  if (companySize && !['1', '2-10', '11-50', '51-200', '201+'].includes(companySize)) go('/profile', 'error', 'Şirket büyüklüğü seçimi geçersiz.')
   if (hourlyRate != null && (!Number.isFinite(hourlyRate) || hourlyRate < 0)) go('/profile', 'error', 'Saatlik ücret geçerli bir sayı olmalı.')
   if (experienceYears != null && (!Number.isInteger(experienceYears) || experienceYears < 0)) go('/profile', 'error', 'Deneyim yılı sıfır veya daha büyük bir tam sayı olmalı.')
 
@@ -85,6 +91,10 @@ export async function updateProfile(formData: FormData) {
     full_name: fullName,
     title: title || null,
     company_name: companyName || null,
+    company_website: role === 'employer' ? companyWebsite || null : null,
+    company_industry: role === 'employer' ? companyIndustry || null : null,
+    company_size: role === 'employer' ? companySize || null : null,
+    company_city: role === 'employer' ? companyCity || null : null,
     bio: bio || null,
     skills: parseSkills(formData.get('skills')),
     hourly_rate: role === 'freelancer' ? hourlyRate : null,

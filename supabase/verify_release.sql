@@ -12,6 +12,9 @@ with release_checks(name, passed, detail) as (
     ('safety reports table', to_regclass('public.safety_reports') is not null, 'Yönetici inceleme kuyruğu'),
     ('rate limit table', to_regclass('public.rate_limit_buckets') is not null, 'Merkezi hız sınırlama kayıtları'),
     ('proposal notes table', to_regclass('public.proposal_notes') is not null, 'İşverene özel aday notları'),
+    ('phone verification table', to_regclass('public.profile_phone_verifications') is not null, 'Doğrulanmış telefon durumu'),
+    ('profile verification queue', to_regclass('public.profile_verification_requests') is not null, 'Uzmanlık ve şirket doğrulama kuyruğu'),
+    ('profile badges table', to_regclass('public.profile_badges') is not null, 'Yönetici onaylı profil rozetleri'),
     ('reviews table', to_regclass('public.reviews') is not null, 'Değerlendirme kayıtları'),
     ('job revisions table', to_regclass('public.job_revisions') is not null, 'İlan düzenleme geçmişi'),
     ('proposal edit rpc', to_regprocedure('public.change_pending_proposal(uuid,timestamptz,text,numeric,integer,text)') is not null, 'Teklif düzenleme ve geri çekme'),
@@ -27,6 +30,9 @@ with release_checks(name, passed, detail) as (
     ('rate limit rpc', to_regprocedure('public.consume_rate_limit(text,integer,integer)') is not null, 'Atomik işlem hız sınırlama'),
     ('report rpc', to_regprocedure('public.submit_safety_report(text,uuid,text,text)') is not null, 'Yetki kontrollü şikâyet gönderimi'),
     ('message read rpc', to_regprocedure('public.mark_conversation_read(uuid)') is not null, 'Gerçek mesaj okunma durumu'),
+    ('phone verification sync rpc', to_regprocedure('public.sync_phone_verification()') is not null, 'Auth telefon doğrulamasını güven profiline işler'),
+    ('profile verification submit rpc', to_regprocedure('public.submit_profile_verification(text,text,text,text)') is not null, 'Yetki kontrollü doğrulama başvurusu'),
+    ('profile verification review rpc', to_regprocedure('public.review_profile_verification(uuid,text,uuid,text)') is not null, 'Atomik yönetici onayı ve rozet oluşturma'),
     ('private portfolios bucket', exists(select 1 from storage.buckets where id = 'portfolios' and not public), 'Görünürlük kontrollü portföy dosyaları'),
     ('private resumes bucket', exists(select 1 from storage.buckets where id = 'resumes' and not public), 'Özel özgeçmiş dosyaları'),
     ('private message attachments bucket', exists(select 1 from storage.buckets where id = 'message-attachments' and not public), 'Katılımcılara özel mesaj dosyaları'),
@@ -47,7 +53,7 @@ with release_checks(name, passed, detail) as (
     ), 'Profil görünürlüğü veritabanı alanı'),
     ('core tables use rls', not exists(
       select 1
-      from (values ('profiles'), ('portfolio_items'), ('jobs'), ('proposals'), ('proposal_notes'), ('messages'), ('payments'), ('reviews'), ('user_blocks'), ('safety_reports'), ('rate_limit_buckets')) expected(tablename)
+      from (values ('profiles'), ('portfolio_items'), ('jobs'), ('proposals'), ('proposal_notes'), ('messages'), ('payments'), ('reviews'), ('user_blocks'), ('safety_reports'), ('rate_limit_buckets'), ('profile_phone_verifications'), ('profile_verification_requests'), ('profile_badges')) expected(tablename)
       where not exists (
         select 1
         from pg_class c
