@@ -23,6 +23,31 @@ function validDate(value: string | undefined) {
 }
 
 type JobSort = 'newest' | 'budget_desc' | 'deadline_asc'
+const JOBS_PER_PAGE = 12
+
+function positiveInteger(value: string | undefined) {
+  const number = Number(value)
+  return Number.isInteger(number) && number > 0 ? Math.min(number, 10_000) : 1
+}
+
+function jobsPageHref(filters: {
+  q: string
+  category: string
+  minBudget: number
+  maxBudget: number
+  deadline: string
+  sort: JobSort
+}, page: number) {
+  const params = new URLSearchParams()
+  if (filters.q) params.set('q', filters.q)
+  if (filters.category) params.set('category', filters.category)
+  if (filters.minBudget) params.set('minBudget', String(filters.minBudget))
+  if (filters.maxBudget) params.set('maxBudget', String(filters.maxBudget))
+  if (filters.deadline) params.set('deadline', filters.deadline)
+  if (filters.sort !== 'newest') params.set('sort', filters.sort)
+  if (page > 1) params.set('page', String(page))
+  return params.size > 0 ? `/jobs?${params.toString()}` : '/jobs'
+}
 
 function matchesFallbackSearch(job: { title: string; description: string; category: string; skills?: string[] | null }, value: string) {
   const needle = value.toLocaleLowerCase('tr-TR')
@@ -32,7 +57,7 @@ function matchesFallbackSearch(job: { title: string; description: string; catego
     .includes(needle)
 }
 
-export default async function JobsPage({ searchParams }: { searchParams: Promise<{ q?: string; category?: string; minBudget?: string; maxBudget?: string; deadline?: string; sort?: string }> }) {
+export default async function JobsPage({ searchParams }: { searchParams: Promise<{ q?: string; category?: string; minBudget?: string; maxBudget?: string; deadline?: string; sort?: string; page?: string }> }) {
   const filters = await searchParams
   const { supabase, fullName, user } = await requireRole('freelancer')
   const favoriteIds = new Set(getFavorites(user.user_metadata).map((favorite) => favorite.jobId))
@@ -42,7 +67,11 @@ export default async function JobsPage({ searchParams }: { searchParams: Promise
   const maxBudget = positiveNumber(filters.maxBudget)
   const deadline = validDate(filters.deadline)
   const sort: JobSort = ['newest', 'budget_desc', 'deadline_asc'].includes(filters.sort ?? '') ? filters.sort as JobSort : 'newest'
-  let query = supabase.from('jobs').select('*, employer:profiles!jobs_employer_id_fkey(full_name, company_name)').eq('status', 'open')
+  const page = positiveInteger(filters.page)
+  const rangeStart = (page - 1) * JOBS_PER_PAGE
+  const rangeEnd = rangeStart + JOBS_PER_PAGE - 1
+  const activeFilters = { q: search, category: selectedCategory ?? '', minBudget, maxBudget, deadline, sort }
+  let query = supabase.from('jobs').select('*, employer:profiles!jobs_employer_id_fkey(full_name, company_name)', { count: 'exact' }).eq('status', 'open')
   if (search) query = query.textSearch('search_vector', search, { config: 'simple', type: 'websearch' })
   if (selectedCategory) query = query.eq('category', selectedCategory)
   if (minBudget) query = query.gte('budget_max', minBudget)
@@ -53,7 +82,7 @@ export default async function JobsPage({ searchParams }: { searchParams: Promise
     : sort === 'deadline_asc'
       ? query.order('deadline', { ascending: true, nullsFirst: false }).order('created_at', { ascending: false })
       : query.order('created_at', { ascending: false })
-  let { data: jobs, error } = await query.limit(50)
+  let { data: jobs, error, count: totalCount } = await query.range(rangeStart, rangeEnd)
 
   // A deployment remains usable while the search migration is being rolled out.
   if (search && error) {
@@ -68,13 +97,17 @@ export default async function JobsPage({ searchParams }: { searchParams: Promise
         ? fallbackQuery.order('deadline', { ascending: true, nullsFirst: false }).order('created_at', { ascending: false })
         : fallbackQuery.order('created_at', { ascending: false })
     const fallback = await fallbackQuery.limit(100)
-    jobs = fallback.data?.filter((job) => matchesFallbackSearch(job, search)) ?? null
+    const filteredJobs = fallback.data?.filter((job) => matchesFallbackSearch(job, search)) ?? []
+    totalCount = filteredJobs.length
+    jobs = filteredJobs.slice(rangeStart, rangeEnd + 1)
     error = fallback.error
   }
+  const resultCount = totalCount ?? jobs?.length ?? 0
+  const totalPages = Math.max(1, Math.ceil(resultCount / JOBS_PER_PAGE))
 
   return (
     <MarketplaceShell name={fullName} role="freelancer" active="jobs">
-      <div className="marketplace-page-head"><div><p>AÇIK İLANLAR</p><h1>{selectedCategory ? `${selectedCategory} işleri` : 'Doğru işi bul.'}</h1><span>{selectedCategory ? `${selectedCategory} kategorisindeki açık projeleri karşılaştır.` : 'Yeteneklerine, bütçene ve çalışma takvimine uyan projeleri keşfet.'}</span></div><strong>{jobs?.length ?? 0} sonuç</strong></div>
+      <div className="marketplace-page-head"><div><p>AÇIK İLANLAR</p><h1>{selectedCategory ? `${selectedCategory} işleri` : 'Doğru işi bul.'}</h1><span>{selectedCategory ? `${selectedCategory} kategorisindeki açık projeleri karşılaştır.` : 'Yeteneklerine, bütçene ve çalışma takvimine uyan projeleri keşfet.'}</span></div><strong>{resultCount} sonuç</strong></div>
       <nav className="job-category-picker" aria-label="İş kategorileri">
         {[{ label: 'Tüm işler', value: '', icon: '✦' }, { label: 'Yazılım', value: 'Yazılım', icon: '</>' }, { label: 'Tasarım', value: 'Tasarım', icon: '◇' }, { label: 'Pazarlama', value: 'Pazarlama', icon: '↗' }, { label: 'İçerik', value: 'İçerik', icon: 'Aa' }, { label: 'Video & Ses', value: 'Video & Ses', icon: '▶' }, { label: 'Danışmanlık', value: 'Danışmanlık', icon: '◎' }].map((item) => {
           const params = new URLSearchParams()
@@ -116,6 +149,17 @@ export default async function JobsPage({ searchParams }: { searchParams: Promise
         })}
         {!error && jobs?.length === 0 && <div className="marketplace-empty"><strong>Uygun ilan bulunamadı</strong><p>Filtreleri değiştirerek yeniden deneyebilirsin.</p></div>}
       </div>
+      {!error && resultCount > JOBS_PER_PAGE && (
+        <nav className="jobs-pagination" aria-label="İlan sayfaları">
+          {page > 1
+            ? <Link rel="prev" href={jobsPageHref(activeFilters, page - 1)}>← Önceki</Link>
+            : <span aria-disabled="true">← Önceki</span>}
+          <strong><span className="sr-only">Geçerli sayfa: </span>{page} / {totalPages}</strong>
+          {page < totalPages
+            ? <Link rel="next" href={jobsPageHref(activeFilters, page + 1)}>Sonraki →</Link>
+            : <span aria-disabled="true">Sonraki →</span>}
+        </nav>
+      )}
     </MarketplaceShell>
   )
 }
