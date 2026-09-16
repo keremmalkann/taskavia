@@ -8,7 +8,7 @@ import { ProfileSectionLink } from '@/app/profile-section-link'
 import { getProfileCompletion } from '@/lib/profile-completion'
 import { resolvePortfolioUrl } from '@/lib/portfolio-files'
 import { paymentsEnabled } from '@/lib/features'
-import { cancelProfileVerification, startPhoneVerification, submitProfileVerification, verifyPhoneCode } from '@/lib/actions/verification'
+import { cancelProfileVerification, submitProfileVerification } from '@/lib/actions/verification'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Profilim — Taskavia', description: 'Taskavia profil bilgilerini, yeteneklerini ve portföyünü yönet.' }
@@ -43,19 +43,18 @@ function ProfileAccordionSummary({ number, title, description, status }: { numbe
 export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ error?: string; message?: string }> }) {
   const params = await searchParams
   const { supabase, user, role, fullName } = await requireUser()
-  const [{ data: profile, error: profileError }, { data: reviews }, { data: portfolio }, { data: resumeProfile, error: resumeError }, phoneResult, verificationResult, badgeResult] = await Promise.all([
+  const [{ data: profile, error: profileError }, { data: reviews }, { data: portfolio }, { data: resumeProfile, error: resumeError }, verificationResult, badgeResult] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
     supabase.from('reviews').select('rating, comment, created_at, reviewer:profiles!reviews_reviewer_id_fkey(full_name)').eq('reviewee_id', user.id).order('created_at', { ascending: false }).limit(5),
     supabase.from('portfolio_items').select('*').eq('profile_id', user.id).order('created_at', { ascending: false }),
     role === 'freelancer' ? supabase.from('profiles').select('resume_path').eq('id', user.id).maybeSingle() : Promise.resolve({ data: null, error: null }),
-    supabase.from('profile_phone_verifications').select('verified_at').eq('profile_id', user.id).maybeSingle(),
     supabase.from('profile_verification_requests').select('id, kind, label, status, resolution_note, created_at').eq('profile_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('profile_badges').select('id, kind, label, verified_at').eq('profile_id', user.id).order('verified_at', { ascending: false }),
   ])
-  const phoneVerification = phoneResult.data
   const verificationRequest = verificationResult.data
   const badges = badgeResult.data ?? []
-  const verificationSetupError = phoneResult.error || verificationResult.error || badgeResult.error
+  const verificationSetupError = verificationResult.error || badgeResult.error
+  const emailVerified = Boolean(user.email_confirmed_at)
   const { data: resumeLink } = resumeProfile?.resume_path
     ? await supabase.storage.from('resumes').createSignedUrl(resumeProfile.resume_path, 60 * 60)
     : { data: null }
@@ -139,18 +138,14 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       </div>
 
       <details className="profile-manager-accordion trust-manager" id="profile-section-06">
-        <ProfileAccordionSummary number={role === 'freelancer' ? '03' : '02'} title="Güven & doğrulama" description="Telefonunu ve mesleki bilgilerini doğrulayarak güven profilini güçlendir." status={badges.length ? `${badges.length} rozet` : 'Doğrulama bekleniyor'} />
+        <ProfileAccordionSummary number={role === 'freelancer' ? '03' : '02'} title="Güven & doğrulama" description="E-posta hesabını ve mesleki bilgilerini doğrulayarak güven profilini güçlendir." status={badges.length ? `${badges.length} rozet` : emailVerified ? 'E-posta doğrulandı' : 'Doğrulama bekleniyor'} />
         <div className="profile-manager-accordion-body">
           {verificationSetupError && <div className="error-message">Güven doğrulama alanı için yeni Supabase migration dosyasını çalıştır.</div>}
           <div className="trust-manager-grid">
             <article className="trust-card">
-              <header><span>TELEFON</span><strong className={phoneVerification ? 'verified' : ''}>{phoneVerification ? 'DOĞRULANDI' : 'DOĞRULANMADI'}</strong></header>
-              <h3>{phoneVerification ? 'Telefon doğrulaman tamamlandı' : 'Telefon numaranı doğrula'}</h3>
-              <p>{phoneVerification ? `${user.phone ? `••• ${user.phone.slice(-4)} numaralı telefon` : 'Telefon numaran'} güven profiline eklendi.` : 'Tek kullanımlık SMS koduyla hesabın sana ait olduğunu doğrula.'}</p>
-              {!phoneVerification && <div className="phone-verification-flow">
-                <form action={startPhoneVerification}><label>Telefon numarası<input name="phone" type="tel" inputMode="tel" autoComplete="tel" required placeholder="05xx xxx xx xx" defaultValue={String(user.user_metadata?.pending_phone_verification ?? '')} /></label><button type="submit">Kod gönder →</button></form>
-                {user.user_metadata?.pending_phone_verification && <form action={verifyPhoneCode}><label>6 haneli kod<input name="token" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required placeholder="000000" /></label><button type="submit">Kodu doğrula →</button></form>}
-              </div>}
+              <header><span>E-POSTA</span><strong className={emailVerified ? 'verified' : ''}>{emailVerified ? 'DOĞRULANDI' : 'BEKLENİYOR'}</strong></header>
+              <h3>{emailVerified ? 'E-posta doğrulaman tamamlandı' : 'E-posta doğrulaması bekleniyor'}</h3>
+              <p>{emailVerified ? `${user.email ?? 'Hesap e-postan'} doğrulanmış hesap bilgisi olarak kullanılıyor.` : 'Kayıt sırasında gönderilen doğrulama bağlantısını açarak hesabını doğrula.'}</p>
             </article>
             <article className="trust-card">
               <header><span>{role === 'employer' ? 'ŞİRKET' : 'UZMANLIK'}</span><strong className={badges.some((badge) => badge.kind === (role === 'employer' ? 'company' : 'expertise')) ? 'verified' : ''}>{badges.some((badge) => badge.kind === (role === 'employer' ? 'company' : 'expertise')) ? 'ROZET VAR' : 'BAŞVURU'}</strong></header>

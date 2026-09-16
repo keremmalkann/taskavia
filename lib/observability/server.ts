@@ -7,7 +7,6 @@ export const ErrorCodes = {
   unhandledClient: 'TVA-UI-001',
   invalidRequest: 'TVA-API-001',
   unauthorized: 'TVA-AUTH-001',
-  phoneVerificationFailed: 'TVA-AUTH-002',
   conversationNotFound: 'TVA-MSG-001',
   messageReadFailed: 'TVA-MSG-002',
   messageQueryFailed: 'TVA-MSG-003',

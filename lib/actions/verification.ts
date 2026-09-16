@@ -3,87 +3,9 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { requireUser } from '@/lib/auth/role'
-import { ErrorCodes, reportServerError } from '@/lib/observability/server'
 
 function go(kind: 'error' | 'message', message: string): never {
   redirect(`/profile?${kind}=${encodeURIComponent(message)}#profile-section-06`)
-}
-
-function normalizePhone(value: string) {
-  const compact = value.trim().replace(/[\s().-]/g, '')
-  if (/^0\d{10}$/.test(compact)) return `+90${compact.slice(1)}`
-  if (/^\d{10}$/.test(compact)) return `+90${compact}`
-  if (/^90\d{10}$/.test(compact)) return `+${compact}`
-  return compact
-}
-
-function phoneSendErrorMessage(code?: string) {
-  switch (code) {
-    case 'phone_provider_disabled':
-      return 'SMS sağlayıcısı etkin değil. Supabase telefon sağlayıcısı ayarlarını kontrol et.'
-    case 'phone_exists':
-      return 'Bu telefon numarası başka bir hesap tarafından kullanılıyor. Farklı bir numara dene veya mevcut hesabınla giriş yap.'
-    case 'over_sms_send_rate_limit':
-    case 'over_request_rate_limit':
-      return 'Çok sık doğrulama kodu istendi. 60 saniye bekleyip yeniden dene.'
-    case 'validation_failed':
-      return 'Telefon numarası geçersiz. Türkiye için 05xx xxx xx xx veya +90 5xx xxx xx xx biçimini kullan.'
-    case 'sms_send_failed':
-      return 'SMS sağlayıcısı gönderimi reddetti. Twilio deneme hesabında alıcı numarayı, Messaging Service göndericisini ve Türkiye gönderim iznini kontrol et.'
-    default:
-      return 'SMS gönderilemedi. Twilio bağlantısını ve hesap durumunu kontrol edip yeniden dene.'
-  }
-}
-
-export async function startPhoneVerification(formData: FormData) {
-  const { supabase, user } = await requireUser()
-  const phone = normalizePhone(String(formData.get('phone') ?? ''))
-  if (!/^\+[1-9]\d{7,14}$/.test(phone)) go('error', 'Telefon numarasını ülke koduyla birlikte geçerli biçimde gir.')
-
-  const currentMetadata = user.user_metadata && typeof user.user_metadata === 'object' ? user.user_metadata : {}
-  const { error } = await supabase.auth.updateUser({
-    phone,
-    data: { ...currentMetadata, pending_phone_verification: phone },
-  })
-  if (error) {
-    const authCode = error.code ?? 'unknown'
-    await reportServerError(new Error(`Supabase phone verification failed: ${authCode}`), {
-      code: ErrorCodes.phoneVerificationFailed,
-      event: 'auth.phone_verification_send_failed',
-      severity: 'warning',
-      context: {
-        authCode,
-        status: error.status ?? null,
-        userId: user.id,
-      },
-    })
-    go('error', phoneSendErrorMessage(error.code))
-  }
-
-  revalidatePath('/profile')
-  go('message', 'Doğrulama kodu telefonuna gönderildi. Kodu aşağıdaki alana gir.')
-}
-
-export async function verifyPhoneCode(formData: FormData) {
-  const { supabase, user } = await requireUser()
-  const token = String(formData.get('token') ?? '').trim()
-  const phone = normalizePhone(String(user.user_metadata?.pending_phone_verification ?? ''))
-  if (!/^\d{6}$/.test(token)) go('error', 'Doğrulama kodu 6 haneli olmalı.')
-  if (!/^\+[1-9]\d{7,14}$/.test(phone)) go('error', 'Bekleyen telefon doğrulaması bulunamadı. Önce yeni kod iste.')
-
-  const { error } = await supabase.auth.verifyOtp({ phone, token, type: 'phone_change' })
-  if (error) go('error', 'Kod geçersiz veya süresi dolmuş. Yeni kod isteyip tekrar dene.')
-
-  const { error: syncError } = await supabase.rpc('sync_phone_verification')
-  if (syncError) go('error', 'Telefon doğrulandı ancak güven profiline işlenemedi. Migration kurulumunu kontrol et.')
-
-  const currentMetadata = user.user_metadata && typeof user.user_metadata === 'object' ? user.user_metadata : {}
-  const metadata: Record<string, unknown> = { ...currentMetadata }
-  delete metadata.pending_phone_verification
-  await supabase.auth.updateUser({ data: metadata })
-  revalidatePath('/profile')
-  revalidatePath(`/profiles/${user.id}`)
-  go('message', 'Telefon numaran doğrulandı ve güven profiline eklendi.')
 }
 
 export async function submitProfileVerification(formData: FormData) {
